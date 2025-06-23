@@ -113,7 +113,7 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
     },
 
     // Mock implementation for development
-    getMockCatalogs: async (): Promise<ApiResponse<Catalog[]>> => {
+    async getMockCatalogs(): Promise<ApiResponse<Catalog[]>> {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 800));
 
@@ -169,7 +169,7 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
       };
     },
 
-    getMockProducts: async (
+    async getMockProducts(
       catalogId: string,
       params?: QueryParams
     ): Promise<ApiResponse<Product[]>> {
