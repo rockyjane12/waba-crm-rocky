@@ -177,7 +177,7 @@ const DropdownMenuShortcut = ({
     />
   );
 };
-DropdownMenuShortcut.displayName = "DropdownMenuShortcut";
+DropdownMenuShortcut.displayname = "DropdownMenuShortcut";
 
 export {
   DropdownMenu,

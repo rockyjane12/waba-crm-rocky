@@ -35,19 +35,19 @@ export default function CustomersPage() {
     }
   });
   
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     await refresh();
-  };
+  }, [refresh]);
   
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value);
     setFilters({ status: statusFilter !== "all" ? statusFilter : undefined, search: value });
-  };
+  }, [statusFilter, setFilters]);
   
-  const handleStatusChange = (value: string) => {
+  const handleStatusChange = useCallback((value: string) => {
     setStatusFilter(value);
     setFilters({ status: value !== "all" ? value : undefined, search: searchTerm });
-  };
+  }, [searchTerm, setFilters]);
   
   // Get columns for the DataTable
   const columns = getCustomerColumns();

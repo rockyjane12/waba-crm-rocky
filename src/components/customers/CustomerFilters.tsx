@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, RefreshCw, Filter } from "lucide-react";
@@ -13,7 +13,7 @@ export interface CustomerFiltersProps {
   isRefreshing?: boolean;
 }
 
-export const CustomerFilters = ({
+export const CustomerFilters = memo(({
   searchTerm,
   onSearchChange,
   statusFilter,
@@ -26,12 +26,31 @@ export const CustomerFilters = ({
 
   // Effect to handle debounced search term changes
   useEffect(() => {
-    onSearchChange(debouncedSearchTerm);
-  }, [debouncedSearchTerm, onSearchChange]);
+    if (debouncedSearchTerm !== searchTerm) {
+      onSearchChange(debouncedSearchTerm);
+    }
+  }, [debouncedSearchTerm, onSearchChange, searchTerm]);
+
+  // Update local state when prop changes (for external updates)
+  useEffect(() => {
+    if (searchTerm !== localSearchTerm) {
+      setLocalSearchTerm(searchTerm);
+    }
+  }, [searchTerm]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setLocalSearchTerm(e.target.value);
   }, []);
+
+  const handleStatusChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    onStatusFilterChange(e.target.value);
+  }, [onStatusFilterChange]);
+
+  const handleRefreshClick = useCallback(async () => {
+    if (onRefresh && !isRefreshing) {
+      await onRefresh();
+    }
+  }, [onRefresh, isRefreshing]);
 
   return (
     <div className="space-y-4">
@@ -50,7 +69,7 @@ export const CustomerFilters = ({
           <Filter className="h-4 w-4 text-gray-500" />
           <select
             value={statusFilter}
-            onChange={(e) => onStatusFilterChange(e.target.value)}
+            onChange={handleStatusChange}
             className="px-3 py-2 border border-gray-300 rounded-md bg-white"
           >
             <option value="all">All statuses</option>
@@ -64,7 +83,7 @@ export const CustomerFilters = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={onRefresh}
+              onClick={handleRefreshClick}
               disabled={isRefreshing}
             >
               <RefreshCw
@@ -102,6 +121,8 @@ export const CustomerFilters = ({
       </div>
     </div>
   );
-};
+});
+
+CustomerFilters.displayName = "CustomerFilters";
 
 export default CustomerFilters;
