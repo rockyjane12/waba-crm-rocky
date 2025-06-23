@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { CustomerCard } from "@/components/CustomerCard";
@@ -21,6 +21,7 @@ import { getCustomerColumns } from "@/components/customers/customer-table-column
 export default function CustomersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { 
     customers, 
@@ -36,7 +37,9 @@ export default function CustomersPage() {
   });
   
   const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
     await refresh();
+    setTimeout(() => setIsRefreshing(false), 500);
   }, [refresh]);
   
   const handleSearchChange = useCallback((value: string) => {
@@ -89,7 +92,7 @@ export default function CustomersPage() {
           statusFilter={statusFilter}
           onStatusFilterChange={handleStatusChange}
           onRefresh={handleRefresh}
-          isRefreshing={isLoading}
+          isRefreshing={isRefreshing}
         />
 
         {/* Customer List */}

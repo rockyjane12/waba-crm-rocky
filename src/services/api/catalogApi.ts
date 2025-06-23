@@ -101,8 +101,9 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
     getCatalogs: async (): Promise<ApiResponse<Catalog[]>> => {
       try {
         // Use Facebook Graph API to get catalogs
+        const accessToken = process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN;
         const response = await fetch(
-          `https://graph.facebook.com/v23.0/1558479901353656/owned_product_catalogs?access_token=${process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN}`
+          `https://graph.facebook.com/v23.0/1558479901353656/owned_product_catalogs?access_token=${accessToken}`
         );
         
         if (!response.ok) {
@@ -119,7 +120,7 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
           thumbnailUrl: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
           productCount: 0, // We'll need another API call to get this
           status: "active",
-          isDefault: catalog.id === "1444914166670906", // Set the first one as default
+          isDefault: catalog.id === fbData.data[0]?.id, // Set the first one as default
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
@@ -129,169 +130,25 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
         };
       } catch (error) {
         console.error("Error fetching catalogs:", error);
-        // Fallback to mock data if API fails
-        return getMockCatalogs();
+        throw error;
       }
     },
 
     getProducts: async (
       catalogId: string,
       params?: QueryParams
-    ): Promise<ApiResponse<Product[]>> {
+    ): Promise<ApiResponse<Product[]>> => {
       try {
         // Here you would implement the actual API call to get products
-        // For now, we'll use mock data
-        return getMockProducts(catalogId, params);
+        // For now, we'll throw an error to indicate this needs to be implemented
+        throw new Error("Product API not implemented");
       } catch (error) {
         console.error("Error fetching products:", error);
-        return getMockProducts(catalogId, params);
+        throw error;
       }
-    },
-
-    // Mock implementation for development
-    getMockCatalogs: getMockCatalogs,
-    getMockProducts: getMockProducts
+    }
   };
 };
-
-// Mock data functions
-async function getMockCatalogs(): Promise<ApiResponse<Catalog[]>> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 800));
-
-  const mockCatalogs: Catalog[] = [
-    {
-      id: "1444914166670906",
-      name: "Catalogue_Products",
-      description: "Facebook product catalog",
-      thumbnailUrl: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      productCount: 24,
-      status: "active",
-      isDefault: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
-  return {
-    data: mockCatalogs
-  };
-}
-
-async function getMockProducts(
-  catalogId: string,
-  params?: QueryParams
-): Promise<ApiResponse<Product[]>> {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
-  const mockProducts: Product[] = [
-    {
-      id: "prod_1",
-      catalogId,
-      name: "Margherita Pizza",
-      description: "Classic pizza with tomato, mozzarella, and basil",
-      price: 12.99,
-      currency: "USD",
-      imageUrl: "https://images.pexels.com/photos/2147491/pexels-photo-2147491.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      status: "active",
-      category: "main_courses",
-      availability: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: "prod_2",
-      catalogId,
-      name: "Caesar Salad",
-      description: "Fresh romaine lettuce with Caesar dressing and croutons",
-      price: 8.99,
-      currency: "USD",
-      imageUrl: "https://images.pexels.com/photos/1211887/pexels-photo-1211887.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      status: "active",
-      category: "appetizers",
-      availability: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: "prod_3",
-      catalogId,
-      name: "Chocolate Cake",
-      description: "Rich chocolate cake with ganache frosting",
-      price: 6.99,
-      currency: "USD",
-      imageUrl: "https://images.pexels.com/photos/132694/pexels-photo-132694.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      status: "active",
-      category: "desserts",
-      availability: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ];
-
-  // Apply filters if provided
-  let filteredProducts = [...mockProducts];
-  
-  if (params?.filters) {
-    const filters = params.filters;
-    
-    if (filters.category) {
-      filteredProducts = filteredProducts.filter(p => p.category === filters.category);
-    }
-    
-    if (filters.availability) {
-      filteredProducts = filteredProducts.filter(p => 
-        filters.availability === 'true' ? p.availability : !p.availability
-      );
-    }
-    
-    if (filters.status) {
-      filteredProducts = filteredProducts.filter(p => p.status === filters.status);
-    }
-    
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filteredProducts = filteredProducts.filter(p => 
-        p.name.toLowerCase().includes(searchLower) || 
-        p.description.toLowerCase().includes(searchLower)
-      );
-    }
-  }
-  
-  // Apply sorting
-  if (params?.sort) {
-    const sortField = params.sort as keyof Product;
-    const direction = params.direction || 'asc';
-    
-    filteredProducts.sort((a, b) => {
-      if (a[sortField] < b[sortField]) return direction === 'asc' ? -1 : 1;
-      if (a[sortField] > b[sortField]) return direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
-  
-  // Apply pagination
-  const page = params?.page || 1;
-  const pageSize = params?.pageSize || 10;
-  const totalItems = filteredProducts.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  
-  const paginatedProducts = filteredProducts.slice(
-    (page - 1) * pageSize,
-    page * pageSize
-  );
-
-  return {
-    data: paginatedProducts,
-    meta: {
-      page,
-      pageSize,
-      totalItems,
-      totalPages
-    }
-  };
-}
 
 // Create a default instance with implementation
 export const catalogApi = createCatalogApi({

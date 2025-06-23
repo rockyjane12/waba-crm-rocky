@@ -38,19 +38,7 @@ export const useProducts = (catalogId: string | null) => {
         });
       } catch (error) {
         console.error("Error fetching products:", error);
-        // Fallback to mock data
-        return catalogApi.getMockProducts(catalogId, {
-          page,
-          pageSize,
-          sort: sort.field as string,
-          direction: sort.direction,
-          filters: {
-            ...(filters.category ? { category: filters.category } : {}),
-            ...(filters.availability !== undefined ? { availability: String(filters.availability) } : {}),
-            ...(filters.status ? { status: filters.status } : {}),
-            ...(filters.search ? { search: filters.search } : {})
-          }
-        });
+        throw error;
       }
     },
     enabled: !!catalogId,

@@ -60,6 +60,18 @@ export default function MessagesPage() {
     return customers.find(c => c.wa_id === selectedCustomerId);
   }, [customers, selectedCustomerId]);
 
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchTerm(value);
+  }, []);
+
+  const handleSelectCustomer = useCallback((id: string) => {
+    setSelectedCustomerId(id);
+  }, []);
+
+  const handleShowSearch = useCallback((show: boolean) => {
+    setShowSearch(show);
+  }, []);
+
   const sendMessage = useCallback(async (content: string) => {
     if (!selectedCustomerId) return;
     
@@ -91,16 +103,16 @@ export default function MessagesPage() {
           <Card className="lg:col-span-4 xl:col-span-3 flex flex-col overflow-hidden border-0 rounded-none lg:rounded-l-lg lg:border">
             <CustomerSearch 
               searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
+              onSearchChange={handleSearchChange}
               showSearch={showSearch}
-              setShowSearch={setShowSearch}
+              setShowSearch={handleShowSearch}
             />
 
             <ScrollArea className="flex-1">
               <CustomerList 
                 customers={filteredCustomers}
                 selectedCustomerId={selectedCustomerId}
-                onSelectCustomer={setSelectedCustomerId}
+                onSelectCustomer={handleSelectCustomer}
                 isLoading={customersLoading}
                 searchTerm={searchTerm}
               />

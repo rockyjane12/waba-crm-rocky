@@ -20,9 +20,7 @@ export const useCatalogs = () => {
         return response.data;
       } catch (error) {
         console.error("Error fetching catalogs:", error);
-        // Fallback to mock data if the API fails
-        const mockResponse = await catalogApi.getMockCatalogs();
-        return mockResponse.data;
+        throw error;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
