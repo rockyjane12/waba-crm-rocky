@@ -1,4 +1,4 @@
-﻿import {
+import {
   LayoutDashboard,
   Users,
   ShoppingCart,
@@ -8,6 +8,7 @@
   BarChart,
   Bell,
   HelpCircle,
+  BookOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -53,6 +54,11 @@ export const sidebarNavItems: SidebarNavItem[] = [
       count: 5,
       variant: "secondary",
     },
+  },
+  {
+    path: "/dashboard/catalog",
+    label: "Catalog",
+    icon: BookOpen,
   },
   {
     path: "/dashboard/reports",
