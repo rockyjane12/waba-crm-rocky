@@ -44,7 +44,7 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
   return {
     getCatalogs: async (): Promise<ApiResponse<Catalog[]>> => {
       try {
-        const url = `${baseUrl}/${version}/me/owned_product_catalogs?access_token=${accessToken}`;
+        const url = `${baseUrl}/${version}/1558479901353656/owned_product_catalogs?access_token=${accessToken}`;
         
         const response = await fetch(url);
         
