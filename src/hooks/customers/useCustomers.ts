@@ -45,6 +45,7 @@ export const useCustomers = (options: UseCustomersOptions = {}) => {
   const mountedRef = useRef(true);
   const lastFilterUpdateRef = useRef(Date.now());
   const filterTimeoutRef = useRef<NodeJS.Timeout>();
+  const initialLoadRef = useRef(false);
 
   const loadCustomers = useCallback(async (force = false) => {
     const now = Date.now();
@@ -153,8 +154,9 @@ export const useCustomers = (options: UseCustomersOptions = {}) => {
     }
 
     // Load initial data if needed
-    if (!globalState.isInitialLoadStarted) {
+    if (!globalState.isInitialLoadStarted && !initialLoadRef.current) {
       globalState.isInitialLoadStarted = true;
+      initialLoadRef.current = true;
       loadCustomers();
     }
 

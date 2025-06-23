@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { CustomerCard } from "@/components/CustomerCard";
