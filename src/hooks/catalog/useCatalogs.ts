@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { catalogApi } from "@/services/api/catalogApi";
 import { Catalog } from "@/types/catalog";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 
 export const useCatalogs = () => {
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
@@ -28,23 +28,23 @@ export const useCatalogs = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const selectCatalog = (catalogId: string) => {
+  const selectCatalog = useCallback((catalogId: string) => {
     setSelectedCatalogId(catalogId);
-  };
+  }, []);
 
-  const clearSelectedCatalog = () => {
+  const clearSelectedCatalog = useCallback(() => {
     setSelectedCatalogId(null);
-  };
+  }, []);
 
-  const getDefaultCatalog = (): Catalog | undefined => {
+  const getDefaultCatalog = useCallback((): Catalog | undefined => {
     if (!catalogs) return undefined;
     return catalogs.find(catalog => catalog.isDefault);
-  };
+  }, [catalogs]);
 
-  const getSelectedCatalog = (): Catalog | undefined => {
+  const getSelectedCatalog = useCallback((): Catalog | undefined => {
     if (!catalogs || !selectedCatalogId) return undefined;
     return catalogs.find(catalog => catalog.id === selectedCatalogId);
-  };
+  }, [catalogs, selectedCatalogId]);
 
   return {
     catalogs: catalogs || [],
