@@ -3,10 +3,8 @@ import { Catalog, Product, ProductFilters, ProductSort } from "@/types/catalog";
 export interface CatalogApiConfig {
   baseUrl: string;
   accessToken: string;
-  endpoints: {
-    getCatalogs: string;
-    getProducts: (catalogId: string) => string;
-  };
+  businessAccountId: string;
+  version: string;
 }
 
 export interface QueryParams {
@@ -39,18 +37,17 @@ export class ApiError extends Error {
 }
 
 export const createCatalogApi = (config: CatalogApiConfig) => {
-  const { baseUrl, accessToken, endpoints } = config;
+  const { baseUrl, accessToken, businessAccountId, version } = config;
 
   const headers = {
     "Content-Type": "application/json",
-    "Authorization": `Bearer ${accessToken}`,
   };
 
   const handleResponse = async <T>(response: Response): Promise<ApiResponse<T>> => {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new ApiError(
-        errorData.message || "An error occurred",
+        errorData.message || `API request failed with status ${response.status}`,
         response.status,
         errorData
       );
@@ -100,37 +97,43 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
   return {
     getCatalogs: async (): Promise<ApiResponse<Catalog[]>> => {
       try {
-        // Use Facebook Graph API to get catalogs
-        const accessToken = process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN;
-        const response = await fetch(
-          `https://graph.facebook.com/v23.0/1558479901353656/owned_product_catalogs?access_token=${accessToken}`
-        );
+        const url = `${baseUrl}/${version}/${businessAccountId}/owned_product_catalogs?access_token=${accessToken}`;
+        
+        const response = await fetch(url);
         
         if (!response.ok) {
-          throw new Error(`Failed to fetch catalogs: ${response.statusText}`);
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || `Failed to fetch catalogs: ${response.statusText}`
+          );
         }
         
-        const fbData = await response.json();
+        const fbResponse = await response.json();
         
-        // Transform Facebook API response to our Catalog format
-        const catalogs: Catalog[] = fbData.data.map((catalog: any) => ({
+        // Transform Facebook API response to our app's format
+        const catalogs: Catalog[] = fbResponse.data.map((catalog: any) => ({
           id: catalog.id,
           name: catalog.name,
           description: "Facebook product catalog",
-          thumbnailUrl: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+          thumbnailUrl: "https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
           productCount: 0, // We'll need another API call to get this
           status: "active",
-          isDefault: catalog.id === fbData.data[0]?.id, // Set the first one as default
+          isDefault: false,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
+        
+        // Set the first catalog as default if any exist
+        if (catalogs.length > 0) {
+          catalogs[0].isDefault = true;
+        }
         
         return {
           data: catalogs
         };
       } catch (error) {
         console.error("Error fetching catalogs:", error);
-        throw error;
+        throw new Error(`Failed to fetch catalogs: ${error instanceof Error ? error.message : String(error)}`);
       }
     },
 
@@ -139,23 +142,56 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
       params?: QueryParams
     ): Promise<ApiResponse<Product[]>> => {
       try {
-        // Here you would implement the actual API call to get products
-        // For now, we'll throw an error to indicate this needs to be implemented
-        throw new Error("Product API not implemented");
+        const url = `${baseUrl}/${version}/${catalogId}/products?access_token=${accessToken}${buildQueryString(params)}`;
+        
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            errorData.message || `Failed to fetch products: ${response.statusText}`
+          );
+        }
+        
+        const fbResponse = await response.json();
+        
+        // Transform Facebook API response to our app's format
+        const products: Product[] = fbResponse.data.map((product: any) => ({
+          id: product.id,
+          catalogId,
+          name: product.name || "Unnamed Product",
+          description: product.description || "",
+          price: product.price || 0,
+          currency: product.currency || "USD",
+          imageUrl: product.image_url || "https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+          status: product.availability === "in stock" ? "active" : "out_of_stock",
+          category: "other",
+          availability: product.availability === "in stock",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        
+        return {
+          data: products,
+          meta: {
+            page: params?.page || 1,
+            pageSize: params?.pageSize || 10,
+            totalItems: products.length,
+            totalPages: Math.ceil(products.length / (params?.pageSize || 10))
+          }
+        };
       } catch (error) {
         console.error("Error fetching products:", error);
-        throw error;
+        throw new Error(`Failed to fetch products: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
   };
 };
 
-// Create a default instance with implementation
+// Create a default instance with Facebook Graph API implementation
 export const catalogApi = createCatalogApi({
-  baseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://api.example.com',
-  accessToken: process.env.NEXT_PUBLIC_API_TOKEN || 'mock-token',
-  endpoints: {
-    getCatalogs: '/catalogs',
-    getProducts: (catalogId) => `/catalogs/${catalogId}/products`
-  }
+  baseUrl: process.env.NEXT_PUBLIC_WABA_API_URL || 'https://graph.facebook.com',
+  accessToken: process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN || '',
+  businessAccountId: process.env.WABA_BUSINESS_ACCOUNT_ID || '1558479901353656',
+  version: process.env.NEXT_PUBLIC_WABA_API_VERSION || 'v23.0'
 });

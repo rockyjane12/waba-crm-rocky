@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { catalogApi } from "@/services/api/catalogApi";
 import { Catalog } from "@/types/catalog";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 
 export const useCatalogs = () => {
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
@@ -15,7 +15,7 @@ export const useCatalogs = () => {
     queryKey: ["catalogs"],
     queryFn: async () => {
       try {
-        // Use the real API implementation
+        // Use the Facebook Graph API to fetch catalogs
         const response = await catalogApi.getCatalogs();
         return response.data;
       } catch (error) {
@@ -26,23 +26,23 @@ export const useCatalogs = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const selectCatalog = useCallback((catalogId: string) => {
+  const selectCatalog = (catalogId: string) => {
     setSelectedCatalogId(catalogId);
-  }, []);
+  };
 
-  const clearSelectedCatalog = useCallback(() => {
+  const clearSelectedCatalog = () => {
     setSelectedCatalogId(null);
-  }, []);
+  };
 
-  const getDefaultCatalog = useCallback((): Catalog | undefined => {
+  const getDefaultCatalog = (): Catalog | undefined => {
     if (!catalogs) return undefined;
     return catalogs.find(catalog => catalog.isDefault);
-  }, [catalogs]);
+  };
 
-  const getSelectedCatalog = useCallback((): Catalog | undefined => {
+  const getSelectedCatalog = (): Catalog | undefined => {
     if (!catalogs || !selectedCatalogId) return undefined;
     return catalogs.find(catalog => catalog.id === selectedCatalogId);
-  }, [catalogs, selectedCatalogId]);
+  };
 
   return {
     catalogs: catalogs || [],

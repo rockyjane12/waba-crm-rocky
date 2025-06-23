@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { catalogApi } from "@/services/api/catalogApi";
 import { ProductFilters, ProductSort } from "@/types/catalog";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 
 export const useProducts = (catalogId: string | null) => {
   const [page, setPage] = useState(1);
@@ -23,7 +23,7 @@ export const useProducts = (catalogId: string | null) => {
       if (!catalogId) return { data: [], meta: { page: 1, pageSize, totalItems: 0, totalPages: 0 } };
       
       try {
-        // Use the real API implementation
+        // Use the Facebook Graph API to fetch products
         return catalogApi.getProducts(catalogId, {
           page,
           pageSize,
@@ -45,19 +45,19 @@ export const useProducts = (catalogId: string | null) => {
     staleTime: 1 * 60 * 1000, // 1 minute
   });
 
-  const updateFilters = useCallback((newFilters: Partial<ProductFilters>) => {
+  const updateFilters = (newFilters: Partial<ProductFilters>) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
     setPage(1); // Reset to first page when filters change
-  }, []);
+  };
 
-  const updateSort = useCallback((field: keyof ProductSort['field'], direction: 'asc' | 'desc') => {
+  const updateSort = (field: keyof ProductSort['field'], direction: 'asc' | 'desc') => {
     setSort({ field, direction });
-  }, []);
+  };
 
-  const clearFilters = useCallback(() => {
+  const clearFilters = () => {
     setFilters({});
     setPage(1);
-  }, []);
+  };
 
   return {
     products: data?.data || [],
