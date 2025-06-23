@@ -190,8 +190,8 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
 
 // Create a default instance with Facebook Graph API implementation
 export const catalogApi = createCatalogApi({
-  baseUrl: process.env.NEXT_PUBLIC_WABA_API_URL || 'https://graph.facebook.com',
-  accessToken: process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN || '',
+  baseUrl: process.env.NEXT_PUBLIC_WABA_API_URL,
+  accessToken: process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN ,
   businessAccountId: process.env.WABA_BUSINESS_ACCOUNT_ID || '1558479901353656',
-  version: process.env.NEXT_PUBLIC_WABA_API_VERSION || 'v23.0'
+  version: process.env.NEXT_PUBLIC_WABA_API_VERSION
 });
