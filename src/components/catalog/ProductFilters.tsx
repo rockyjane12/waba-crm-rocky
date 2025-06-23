@@ -30,14 +30,14 @@ interface ProductFilterBarProps {
 }
 
 const AVAILABILITY_OPTIONS = [
-  { value: "", label: "All Availability" },
+  { value: "all", label: "All Availability" },
   { value: "in stock", label: "In Stock" },
   { value: "out of stock", label: "Out of Stock" },
   { value: "preorder", label: "Preorder" },
 ];
 
 const VISIBILITY_OPTIONS = [
-  { value: "", label: "All Visibility" },
+  { value: "all", label: "All Visibility" },
   { value: "published", label: "Published" },
   { value: "hidden", label: "Hidden" },
 ];
@@ -109,9 +109,9 @@ export const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
 
         <div className="flex flex-wrap gap-3">
           <Select
-            value={filters.availability || ""}
+            value={filters.availability || "all"}
             onValueChange={(value) =>
-              onUpdateFilters({ availability: value as string })
+              onUpdateFilters({ availability: value === "all" ? undefined : value as string })
             }
           >
             <SelectTrigger className="w-[180px]">
@@ -130,9 +130,9 @@ export const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
           </Select>
 
           <Select
-            value={filters.visibility || ""}
+            value={filters.visibility || "all"}
             onValueChange={(value) =>
-              onUpdateFilters({ visibility: value as string })
+              onUpdateFilters({ visibility: value === "all" ? undefined : value as string })
             }
           >
             <SelectTrigger className="w-[180px]">
@@ -208,7 +208,7 @@ export const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
               </Button>
             </Badge>
           )}
-          {filters.availability && (
+          {filters.availability && filters.availability !== "all" && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Availability:{" "}
               {
@@ -226,7 +226,7 @@ export const ProductFilterBar: React.FC<ProductFilterBarProps> = ({
               </Button>
             </Badge>
           )}
-          {filters.visibility && (
+          {filters.visibility && filters.visibility !== "all" && (
             <Badge variant="secondary" className="flex items-center gap-1">
               Visibility:{" "}
               {

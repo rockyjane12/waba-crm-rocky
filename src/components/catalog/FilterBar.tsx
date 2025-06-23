@@ -92,9 +92,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
         <div className="flex flex-wrap gap-3">
           <Select
-            value={filters.category}
+            value={filters.category || "all"}
             onValueChange={(value) =>
-              onUpdateFilters({ category: value as ProductCategory })
+              onUpdateFilters({ category: value === "all" ? undefined : value as ProductCategory })
             }
           >
             <SelectTrigger className="w-[180px]">
@@ -104,7 +104,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Categories</SelectItem>
+              <SelectItem value="all">All Categories</SelectItem>
               {CATEGORY_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -114,16 +114,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           </Select>
 
           <Select
-            value={filters.status}
+            value={filters.status || "all"}
             onValueChange={(value) =>
-              onUpdateFilters({ status: value as ProductStatus })
+              onUpdateFilters({ status: value === "all" ? undefined : value as ProductStatus })
             }
           >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               {STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
@@ -136,11 +136,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             value={
               filters.availability !== undefined
                 ? String(filters.availability)
-                : ""
+                : "all"
             }
             onValueChange={(value) =>
               onUpdateFilters({
-                availability: value === "" ? undefined : value === "true",
+                availability: value === "all" ? undefined : value === "true",
               })
             }
           >
@@ -148,7 +148,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <SelectValue placeholder="Availability" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               <SelectItem value="true">Available</SelectItem>
               <SelectItem value="false">Unavailable</SelectItem>
             </SelectContent>
