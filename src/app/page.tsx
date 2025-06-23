@@ -11,6 +11,10 @@ import {
   ArrowRight,
   ChevronRight,
   CheckCircle,
+  ShoppingCart,
+  Zap,
+  DollarSign,
+  Smile,
 } from "lucide-react";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { Loading } from "@/components/ui/loading";
@@ -50,25 +54,39 @@ export default function Home() {
 
   const features = [
     {
+      icon: ShoppingCart,
+      title: "Streamlined Order Management",
+      description: "Efficiently manage all your food orders in one place with our intuitive dashboard and automated workflows.",
+      bgColor: "bg-purple-500/10",
+      color: "text-purple-500",
+    },
+    {
       icon: MessageCircle,
-      title: "Smart Messaging",
-      description: "AI-powered message routing and response suggestions",
+      title: "Real-time Customer Communication",
+      description: "Connect with your customers instantly through WhatsApp, providing updates and answering questions in real-time.",
       bgColor: "bg-primary/10",
       color: "text-primary",
     },
     {
-      icon: Star,
-      title: "Analytics Dashboard",
-      description: "Real-time insights and performance metrics",
-      bgColor: "bg-blue-500/10",
-      color: "text-blue-500",
-    },
-    {
-      icon: CheckCircle,
-      title: "Automation Tools",
-      description: "Build powerful workflows with our visual builder",
+      icon: Zap,
+      title: "Automated Order Processing",
+      description: "Let our system handle routine tasks automatically, from order confirmation to delivery notifications.",
       bgColor: "bg-green-500/10",
       color: "text-green-500",
+    },
+    {
+      icon: DollarSign,
+      title: "Reduced Operational Costs",
+      description: "Minimize staffing needs and eliminate expensive POS systems with our cost-effective WhatsApp solution.",
+      bgColor: "bg-red-500/10",
+      color: "text-red-500",
+    },
+    {
+      icon: Smile,
+      title: "Enhanced Customer Satisfaction",
+      description: "Delight your customers with quick responses, personalized service, and seamless ordering experience.",
+      bgColor: "bg-yellow-500/10",
+      color: "text-yellow-500",
     },
   ];
 
@@ -118,19 +136,17 @@ export default function Home() {
             <div className="space-y-6 text-center lg:text-left animate-slide-up">
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full text-sm font-medium text-primary">
                 <Star className="h-4 w-4" />
-                Trusted by 10,000+ businesses
+                Trusted by 10,000+ food businesses
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight">
-                Transform Your{" "}
-                <span className="text-gradient-primary">WhatsApp Business</span>{" "}
-                Experience
+                Revolutionize Your{" "}
+                <span className="text-gradient-primary">Food Business</span>{" "}
+                with WhatsApp
               </h1>
 
               <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto lg:mx-0">
-                The most advanced WhatsApp Business API platform. Manage
-                conversations, automate workflows, and scale your customer
-                communications effortlessly.
+                Integrate our powerful WhatsApp-based system to streamline order management, automate processes, and delight your customers with real-time communication.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -216,8 +232,7 @@ export default function Home() {
               Everything You Need to Succeed
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Powerful features designed to streamline your WhatsApp Business
-              operations and deliver exceptional customer experiences.
+              Powerful features designed to streamline your food business operations and deliver exceptional customer experiences.
             </p>
           </div>
 
@@ -263,7 +278,7 @@ export default function Home() {
               Trusted by Businesses Worldwide
             </h2>
             <p className="text-lg text-white/80 max-w-2xl mx-auto">
-              Join thousands of companies already using WABA Admin to transform
+              Join thousands of food companies already using WABA Admin to transform
               their customer communications.
             </p>
           </div>
@@ -295,7 +310,7 @@ export default function Home() {
         <div className="container-responsive">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Ready to Transform Your Business?
+              Ready to Transform Your Food Business?
             </h2>
             <p className="text-lg text-gray-600 mb-8">
               Start your 14-day free trial today. No credit card required.
