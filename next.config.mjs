@@ -9,6 +9,7 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === "production",
   },
   images: {
+    protocol: 'https',
     formats: ["image/avif", "image/webp"],
     domains: ["images.pexels.com"],
   },
