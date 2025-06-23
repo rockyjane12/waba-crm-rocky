@@ -1,0 +1,135 @@
+/* Common Layout Classes */
+.page-container {
+  @apply min-h-screen bg-background;
+}
+
+.content-container {
+  @apply container mx-auto px-4 sm:px-6 lg:px-8 py-8;
+}
+
+.section-container {
+  @apply py-12 sm:py-16 lg:py-24;
+}
+
+/* Common Card Styles */
+.card-base {
+  @apply bg-card text-card-foreground rounded-lg border shadow-sm;
+}
+
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-md hover:-translate-y-1;
+}
+
+/* Common Button Styles */
+.btn-base {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background;
+}
+
+.btn-primary {
+  @apply bg-primary text-primary-foreground hover:bg-primary/90;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+}
+
+.btn-outline {
+  @apply border border-input hover:bg-accent hover:text-accent-foreground;
+}
+
+.btn-ghost {
+  @apply hover:bg-accent hover:text-accent-foreground;
+}
+
+/* Common Form Styles */
+.form-group {
+  @apply space-y-2;
+}
+
+.form-label {
+  @apply text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70;
+}
+
+.form-input {
+  @apply flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+/* Common Container Classes */
+.container-responsive {
+  @apply container mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Common Spacing Classes */
+.section-spacing {
+  @apply space-y-8 sm:space-y-12 lg:space-y-16;
+}
+
+.content-spacing {
+  @apply space-y-4 sm:space-y-6 lg:space-y-8;
+}
+
+/* Common Responsive Utilities */
+.responsive-text {
+  @apply text-base sm:text-lg lg:text-xl;
+}
+
+.responsive-heading {
+  @apply text-2xl sm:text-3xl lg:text-4xl font-bold;
+}
+
+/* Common Status Colors */
+.status-success {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-warning {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-error {
+  @apply bg-red-100 text-red-800;
+}
+
+.status-info {
+  @apply bg-blue-100 text-blue-800;
+}
+
+/* Common Loading States */
+.loading-skeleton {
+  @apply animate-pulse bg-muted rounded;
+}
+
+.loading-spinner {
+  @apply animate-spin rounded-full border-2 border-muted border-t-primary;
+}
+
+/* Common Focus Styles */
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+}
+
+/* Common Transition Classes */
+.animate-smooth {
+  @apply duration-300 ease-in-out;
+}
+
+.animate-smooth-transform {
+  @apply transform duration-300 ease-in-out;
+}
+
+.animate-smooth-colors {
+  @apply duration-300 ease-in-out;
+}
+
+/* Common Shadow Classes */
+.shadow-soft {
+  @apply shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)];
+}
+
+.shadow-medium {
+  @apply shadow-[0_4px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)];
+}
+
+.shadow-strong {
+  @apply shadow-[0_10px_40px_-10px_rgba(0,0,0,0.15),0_20px_25px_-5px_rgba(0,0,0,0.1)];
+}
