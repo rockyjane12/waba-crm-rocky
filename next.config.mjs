@@ -10,6 +10,7 @@ const nextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
+    domains: ["images.pexels.com"],
   },
   // Enable SWC minification for improved performance
   swcMinify: true,
