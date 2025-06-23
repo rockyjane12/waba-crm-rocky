@@ -1,14 +1,11 @@
 import React, { useState } from "react";
 import { useCatalogs } from "@/hooks/catalog/useCatalogs";
-import { useProducts } from "@/hooks/catalog/useProducts";
+import ProductManager from "./ProductManager";
 import CatalogCard from "./CatalogCard";
-import ProductTable from "./ProductTable";
-import FilterBar from "./FilterBar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ProductFilters } from "@/types/catalog";
 
 export const CatalogGrid: React.FC = () => {
   const {
@@ -21,46 +18,12 @@ export const CatalogGrid: React.FC = () => {
     refetch: refetchCatalogs,
   } = useCatalogs();
 
-  const {
-    products,
-    isLoading: productsLoading,
-    error: productsError,
-    filters,
-    sort,
-    pagination,
-    updateFilters,
-    updateSort,
-    clearFilters,
-    setPage,
-    refetch: refetchProducts,
-  } = useProducts(selectedCatalogId);
-
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    if (selectedCatalogId) {
-      await refetchProducts();
-    } else {
-      await refetchCatalogs();
-    }
+    await refetchCatalogs();
     setTimeout(() => setIsRefreshing(false), 500);
-  };
-
-  const handleUpdateFilters = (newFilters: Partial<ProductFilters>) => {
-    updateFilters(newFilters);
-  };
-
-  const handleClearFilters = () => {
-    clearFilters();
-  };
-
-  const handleSort = (field: any, direction: "asc" | "desc") => {
-    updateSort(field, direction);
-  };
-
-  const handleBackToCatalogs = () => {
-    clearSelectedCatalog();
   };
 
   if (catalogsError) {
@@ -80,46 +43,10 @@ export const CatalogGrid: React.FC = () => {
     const selectedCatalog = catalogs.find(c => c.id === selectedCatalogId);
     
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="mr-2"
-              onClick={handleBackToCatalogs}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Catalogs
-            </Button>
-            <h2 className="text-xl font-semibold">
-              {selectedCatalog?.name} Products
-            </h2>
-          </div>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>
-        </div>
-
-        <FilterBar
-          filters={filters}
-          onUpdateFilters={handleUpdateFilters}
-          onClearFilters={handleClearFilters}
-          onRefresh={handleRefresh}
-          isRefreshing={isRefreshing}
-        />
-
-        <ProductTable
-          products={products}
-          isLoading={productsLoading}
-          error={productsError}
-          sort={sort}
-          onSort={handleSort}
-          pagination={pagination}
-          onPageChange={setPage}
-        />
-      </div>
+      <ProductManager 
+        catalogId={selectedCatalogId} 
+        onBack={clearSelectedCatalog} 
+      />
     );
   }
 
@@ -139,10 +66,6 @@ export const CatalogGrid: React.FC = () => {
               className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
             />
             Refresh
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Catalog
           </Button>
         </div>
       </div>

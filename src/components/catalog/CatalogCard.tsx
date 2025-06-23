@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Package } from "lucide-react";
 import { Catalog } from "@/types/catalog";
-import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface CatalogCardProps {
@@ -22,6 +21,9 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({
     onClick(catalog.id);
   };
 
+  // Use a default image if thumbnailUrl is not available
+  const imageUrl = catalog.thumbnailUrl || "https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
+
   return (
     <Card 
       className={cn(
@@ -32,11 +34,13 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({
     >
       <div className="relative h-48 w-full">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30 z-10" />
-        <Image
-          src={catalog.thumbnailUrl}
+        <img
+          src={imageUrl}
           alt={catalog.name}
-          fill
-          className="object-cover"
+          className="object-cover w-full h-full"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.pexels.com/photos/5632402/pexels-photo-5632402.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1";
+          }}
         />
         <div className="absolute top-2 right-2 z-20">
           <Badge variant={catalog.status === "active" ? "success" : catalog.status === "draft" ? "secondary" : "outline"}>
@@ -52,7 +56,7 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({
       <CardContent className="flex-1 p-4">
         <h3 className="text-lg font-semibold mb-2">{catalog.name}</h3>
         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-          {catalog.description}
+          {catalog.description || "No description available"}
         </p>
         <div className="flex items-center text-sm text-muted-foreground">
           <Package className="h-4 w-4 mr-1" />

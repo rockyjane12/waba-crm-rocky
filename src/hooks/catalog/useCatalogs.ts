@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { catalogApi } from "@/services/api/catalogApi";
 import { Catalog } from "@/types/catalog";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const useCatalogs = () => {
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
@@ -17,9 +18,17 @@ export const useCatalogs = () => {
       try {
         // Use the Facebook Graph API to fetch catalogs
         const response = await catalogApi.getCatalogs();
-        return response.data;
+        
+        // Add default product count since the API doesn't provide it
+        const catalogsWithCount = response.data.map(catalog => ({
+          ...catalog,
+          productCount: 0
+        }));
+        
+        return catalogsWithCount;
       } catch (error) {
         console.error("Error fetching catalogs:", error);
+        toast.error(`Failed to fetch catalogs: ${error instanceof Error ? error.message : String(error)}`);
         throw error;
       }
     },

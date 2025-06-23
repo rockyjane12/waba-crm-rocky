@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -9,11 +9,29 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Product, ProductSort } from "@/types/catalog";
-import { ChevronUp, ChevronDown, Edit, Trash, Eye } from "lucide-react";
+import { Product, ProductSort } from "@/types/product";
+import { ChevronUp, ChevronDown, Edit, Trash, Eye, Save, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
-import { formatCurrency } from "@/lib/utils/format";
+import { Input } from "@/components/ui/input";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
 interface ProductTableProps {
   products: Product[];
@@ -28,9 +46,18 @@ interface ProductTableProps {
     totalPages: number;
   };
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+  editingProduct: string | null;
+  isEditing: boolean;
+  startEditing: (productId: string) => void;
+  cancelEditing: () => void;
+  updateProduct: (id: string, data: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  isUpdating: boolean;
+  isDeleting: boolean;
 }
 
-export const ProductTable: React.FC<ProductTableProps> = ({
+const ProductTable: React.FC<ProductTableProps> = ({
   products,
   isLoading,
   error,
@@ -38,7 +65,19 @@ export const ProductTable: React.FC<ProductTableProps> = ({
   onSort,
   pagination,
   onPageChange,
+  onPageSizeChange,
+  editingProduct,
+  isEditing,
+  startEditing,
+  cancelEditing,
+  updateProduct,
+  deleteProduct,
+  isUpdating,
+  isDeleting,
 }) => {
+  const [editedValues, setEditedValues] = useState<Partial<Product>>({});
+  const [isZoomed, setIsZoomed] = useState<string | null>(null);
+
   const handleSort = (field: keyof Product) => {
     const direction = sort.field === field && sort.direction === "asc" ? "desc" : "asc";
     onSort(field, direction);
@@ -51,6 +90,65 @@ export const ProductTable: React.FC<ProductTableProps> = ({
     ) : (
       <ChevronDown className="h-4 w-4 ml-1" />
     );
+  };
+
+  const handleEdit = (product: Product) => {
+    startEditing(product.id);
+    setEditedValues({});
+  };
+
+  const handleCancelEdit = () => {
+    cancelEditing();
+    setEditedValues({});
+  };
+
+  const handleSaveEdit = async (product: Product) => {
+    if (Object.keys(editedValues).length === 0) {
+      cancelEditing();
+      return;
+    }
+    
+    try {
+      await updateProduct(product.id, editedValues);
+      setEditedValues({});
+    } catch (error) {
+      console.error("Failed to update product:", error);
+    }
+  };
+
+  const handleInputChange = (field: keyof Product, value: string) => {
+    setEditedValues(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const formatPrice = (price: string) => {
+    return price;
+  };
+
+  const getAvailabilityColor = (availability: string) => {
+    switch (availability) {
+      case "in stock":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "out of stock":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "preorder":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getVisibilityColor = (visibility: string) => {
+    switch (visibility) {
+      case "published":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "hidden":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      default:
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    }
   };
 
   if (error) {
@@ -113,7 +211,7 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       <div className="border rounded-md overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
               <TableHead className="w-[80px]">Image</TableHead>
               <TableHead 
                 className="cursor-pointer"
@@ -131,15 +229,6 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                   Price {renderSortIcon("price")}
                 </div>
               </TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead 
-                className="cursor-pointer"
-                onClick={() => handleSort("status")}
-              >
-                <div className="flex items-center">
-                  Status {renderSortIcon("status")}
-                </div>
-              </TableHead>
               <TableHead 
                 className="cursor-pointer"
                 onClick={() => handleSort("availability")}
@@ -148,71 +237,223 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                   Availability {renderSortIcon("availability")}
                 </div>
               </TableHead>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => handleSort("visibility")}
+              >
+                <div className="flex items-center">
+                  Visibility {renderSortIcon("visibility")}
+                </div>
+              </TableHead>
+              <TableHead 
+                className="cursor-pointer"
+                onClick={() => handleSort("retailer_id")}
+              >
+                <div className="flex items-center">
+                  Retailer ID {renderSortIcon("retailer_id")}
+                </div>
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.map((product) => (
-              <TableRow key={product.id}>
+              <TableRow key={product.id} className={cn(
+                "hover:bg-gray-50/50 transition-colors duration-200 border-b border-gray-100",
+                editingProduct === product.id && "bg-blue-50/30"
+              )}>
                 <TableCell>
-                  <div className="relative h-10 w-10 rounded-md overflow-hidden">
-                    <Image
-                      src={product.imageUrl}
-                      alt={product.name}
-                      fill
-                      className="object-cover"
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div 
+                          className="relative h-12 w-12 rounded-md overflow-hidden cursor-pointer"
+                          onMouseEnter={() => setIsZoomed(product.id)}
+                          onMouseLeave={() => setIsZoomed(null)}
+                        >
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="object-cover w-full h-full"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "https://via.placeholder.com/150?text=No+Image";
+                            }}
+                          />
+                          {isZoomed === product.id && (
+                            <div className="absolute -top-32 -left-16 z-50">
+                              <div className="h-40 w-40 rounded-md overflow-hidden border-2 border-white shadow-xl">
+                                <img
+                                  src={product.image_url}
+                                  alt={product.name}
+                                  className="object-cover w-full h-full"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/300?text=No+Image";
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Hover to zoom</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </TableCell>
+                <TableCell>
+                  {editingProduct === product.id ? (
+                    <Input
+                      value={editedValues.name ?? product.name}
+                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      className="w-full"
                     />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{product.name}</div>
-                    <div className="text-sm text-muted-foreground line-clamp-1">
-                      {product.description}
+                  ) : (
+                    <div>
+                      <div className="font-medium">{product.name}</div>
+                      <div className="text-sm text-muted-foreground line-clamp-1">
+                        {product.description || "No description"}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </TableCell>
                 <TableCell>
-                  {formatCurrency(product.price, product.currency)}
+                  {editingProduct === product.id ? (
+                    <Input
+                      value={editedValues.price ?? product.price}
+                      onChange={(e) => handleInputChange("price", e.target.value)}
+                      className="w-full"
+                    />
+                  ) : (
+                    <span className="font-medium">
+                      {formatPrice(product.price)}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline">
-                    {product.category.replace("_", " ")}
-                  </Badge>
+                  {editingProduct === product.id ? (
+                    <select
+                      value={editedValues.availability ?? product.availability}
+                      onChange={(e) => handleInputChange("availability", e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="in stock">In Stock</option>
+                      <option value="out of stock">Out of Stock</option>
+                      <option value="preorder">Preorder</option>
+                    </select>
+                  ) : (
+                    <Badge
+                      className={cn(
+                        "capitalize",
+                        getAvailabilityColor(product.availability)
+                      )}
+                    >
+                      {product.availability}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={
-                      product.status === "active"
-                        ? "success"
-                        : product.status === "out_of_stock"
-                        ? "warning"
-                        : product.status === "inactive"
-                        ? "secondary"
-                        : "outline"
-                    }
-                  >
-                    {product.status.replace("_", " ")}
-                  </Badge>
+                  {editingProduct === product.id ? (
+                    <select
+                      value={editedValues.visibility ?? product.visibility}
+                      onChange={(e) => handleInputChange("visibility", e.target.value)}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="published">Published</option>
+                      <option value="hidden">Hidden</option>
+                    </select>
+                  ) : (
+                    <Badge
+                      className={cn(
+                        "capitalize",
+                        getVisibilityColor(product.visibility)
+                      )}
+                    >
+                      {product.visibility}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell>
-                  <Badge
-                    variant={product.availability ? "success" : "destructive"}
-                  >
-                    {product.availability ? "Available" : "Unavailable"}
-                  </Badge>
+                  {editingProduct === product.id ? (
+                    <Input
+                      value={editedValues.retailer_id ?? product.retailer_id}
+                      onChange={(e) => handleInputChange("retailer_id", e.target.value)}
+                      className="w-full"
+                    />
+                  ) : (
+                    <span className="font-mono text-sm">{product.retailer_id}</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" title="View">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title="Edit">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" title="Delete">
-                      <Trash className="h-4 w-4" />
-                    </Button>
+                    {editingProduct === product.id ? (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleSaveEdit(product)}
+                          disabled={isUpdating}
+                        >
+                          {isUpdating ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={handleCancelEdit}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleEdit(product)}
+                          title="Edit"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              title="Delete"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the product "{product.name}". 
+                                This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteProduct(product.id)}
+                                className="bg-red-500 hover:bg-red-600"
+                                disabled={isDeleting}
+                              >
+                                {isDeleting ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                                ) : null}
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -222,59 +463,57 @@ export const ProductTable: React.FC<ProductTableProps> = ({
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">
-            Showing {(pagination.page - 1) * pagination.pageSize + 1} to{" "}
-            {Math.min(
-              pagination.page * pagination.pageSize,
-              pagination.totalItems
-            )}{" "}
-            of {pagination.totalItems} products
-          </div>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-            >
-              Previous
-            </Button>
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
-              .filter(
-                (p) =>
-                  p === 1 ||
-                  p === pagination.totalPages ||
-                  Math.abs(p - pagination.page) <= 1
-              )
-              .map((p, i, arr) => (
-                <React.Fragment key={p}>
-                  {i > 0 && arr[i - 1] !== p - 1 && (
-                    <Button variant="outline" size="sm" disabled>
-                      ...
-                    </Button>
-                  )}
-                  <Button
-                    variant={pagination.page === p ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => onPageChange(p)}
-                  >
-                    {p}
-                  </Button>
-                </React.Fragment>
-              ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.totalPages}
-            >
-              Next
-            </Button>
-          </div>
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          Showing {(pagination.page - 1) * pagination.pageSize + 1} to{" "}
+          {Math.min(
+            pagination.page * pagination.pageSize,
+            pagination.totalItems
+          )}{" "}
+          of {pagination.totalItems} products
         </div>
-      )}
+        <div className="flex gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(pagination.page - 1)}
+            disabled={pagination.page === 1}
+          >
+            Previous
+          </Button>
+          {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+            .filter(
+              (p) =>
+                p === 1 ||
+                p === pagination.totalPages ||
+                Math.abs(p - pagination.page) <= 1
+            )
+            .map((p, i, arr) => (
+              <React.Fragment key={p}>
+                {i > 0 && arr[i - 1] !== p - 1 && (
+                  <Button variant="outline" size="sm" disabled>
+                    ...
+                  </Button>
+                )}
+                <Button
+                  variant={pagination.page === p ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onPageChange(p)}
+                >
+                  {p}
+                </Button>
+              </React.Fragment>
+            ))}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(pagination.page + 1)}
+            disabled={pagination.page === pagination.totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
