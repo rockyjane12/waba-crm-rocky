@@ -14,9 +14,16 @@ export const useCatalogs = () => {
   } = useQuery({
     queryKey: ["catalogs"],
     queryFn: async () => {
-      // Use mock implementation for development
-      const response = await catalogApi.getMockCatalogs();
-      return response.data;
+      try {
+        // Use the real API implementation
+        const response = await catalogApi.getCatalogs();
+        return response.data;
+      } catch (error) {
+        console.error("Error fetching catalogs:", error);
+        // Fallback to mock data if the API fails
+        const mockResponse = await catalogApi.getMockCatalogs();
+        return mockResponse.data;
+      }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

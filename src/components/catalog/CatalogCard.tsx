@@ -31,19 +31,20 @@ export const CatalogCard: React.FC<CatalogCardProps> = ({
       onClick={handleClick}
     >
       <div className="relative h-48 w-full">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30 z-10" />
         <Image
           src={catalog.thumbnailUrl}
           alt={catalog.name}
           fill
           className="object-cover"
         />
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 z-20">
           <Badge variant={catalog.status === "active" ? "success" : catalog.status === "draft" ? "secondary" : "outline"}>
             {catalog.status}
           </Badge>
         </div>
         {catalog.isDefault && (
-          <div className="absolute top-2 left-2">
+          <div className="absolute top-2 left-2 z-20">
             <Badge variant="primary">Default</Badge>
           </div>
         )}

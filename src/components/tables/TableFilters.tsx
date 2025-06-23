@@ -213,7 +213,7 @@ export function TableFilters({
 
           {searchTerm && (
             <Badge variant="secondary" className="gap-1">
-              Search: &quot;{searchTerm}&quot;
+              Search: "{searchTerm}"
               <Button
                 variant="ghost"
                 size="sm"

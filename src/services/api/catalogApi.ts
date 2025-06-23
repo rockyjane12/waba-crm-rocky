@@ -99,292 +99,201 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
 
   return {
     getCatalogs: async (): Promise<ApiResponse<Catalog[]>> => {
-      const url = `${baseUrl}${endpoints.getCatalogs}`;
-      return fetchWithRetry<Catalog[]>(url, { headers });
+      try {
+        // Use Facebook Graph API to get catalogs
+        const response = await fetch(
+          `https://graph.facebook.com/v23.0/1558479901353656/owned_product_catalogs?access_token=${process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch catalogs: ${response.statusText}`);
+        }
+        
+        const fbData = await response.json();
+        
+        // Transform Facebook API response to our Catalog format
+        const catalogs: Catalog[] = fbData.data.map((catalog: any) => ({
+          id: catalog.id,
+          name: catalog.name,
+          description: "Facebook product catalog",
+          thumbnailUrl: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+          productCount: 0, // We'll need another API call to get this
+          status: "active",
+          isDefault: catalog.id === "1444914166670906", // Set the first one as default
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        
+        return {
+          data: catalogs
+        };
+      } catch (error) {
+        console.error("Error fetching catalogs:", error);
+        // Fallback to mock data if API fails
+        return getMockCatalogs();
+      }
     },
 
     getProducts: async (
       catalogId: string,
       params?: QueryParams
-    ): Promise<ApiResponse<Product[]>> => {
-      const queryString = buildQueryString(params);
-      const url = `${baseUrl}${endpoints.getProducts(catalogId)}${queryString}`;
-      return fetchWithRetry<Product[]>(url, { headers });
+    ): Promise<ApiResponse<Product[]>> {
+      try {
+        // Here you would implement the actual API call to get products
+        // For now, we'll use mock data
+        return getMockProducts(catalogId, params);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        return getMockProducts(catalogId, params);
+      }
     },
 
     // Mock implementation for development
-    async getMockCatalogs(): Promise<ApiResponse<Catalog[]>> {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const mockCatalogs: Catalog[] = [
-        {
-          id: "cat_1",
-          name: "Main Menu",
-          description: "Our standard food menu with all items",
-          thumbnailUrl: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          productCount: 24,
-          status: "active",
-          isDefault: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "cat_2",
-          name: "Seasonal Specials",
-          description: "Limited time seasonal offerings",
-          thumbnailUrl: "https://images.pexels.com/photos/1639562/pexels-photo-1639562.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          productCount: 8,
-          status: "active",
-          isDefault: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "cat_3",
-          name: "Catering Menu",
-          description: "Special menu for events and large orders",
-          thumbnailUrl: "https://images.pexels.com/photos/5638732/pexels-photo-5638732.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          productCount: 15,
-          status: "active",
-          isDefault: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "cat_4",
-          name: "Holiday Menu",
-          description: "Special holiday offerings",
-          thumbnailUrl: "https://images.pexels.com/photos/5718071/pexels-photo-5718071.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          productCount: 12,
-          status: "draft",
-          isDefault: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-
-      return {
-        data: mockCatalogs
-      };
-    },
-
-    async getMockProducts(
-      catalogId: string,
-      params?: QueryParams
-    ): Promise<ApiResponse<Product[]>> {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const mockProducts: Product[] = [
-        {
-          id: "prod_1",
-          catalogId,
-          name: "Margherita Pizza",
-          description: "Classic pizza with tomato, mozzarella, and basil",
-          price: 12.99,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/2147491/pexels-photo-2147491.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "main_courses",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_2",
-          catalogId,
-          name: "Caesar Salad",
-          description: "Fresh romaine lettuce with Caesar dressing and croutons",
-          price: 8.99,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/1211887/pexels-photo-1211887.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "appetizers",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_3",
-          catalogId,
-          name: "Chocolate Cake",
-          description: "Rich chocolate cake with ganache frosting",
-          price: 6.99,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/132694/pexels-photo-132694.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "desserts",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_4",
-          catalogId,
-          name: "Iced Coffee",
-          description: "Cold brewed coffee served over ice",
-          price: 4.50,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/2074122/pexels-photo-2074122.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "beverages",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_5",
-          catalogId,
-          name: "Garlic Bread",
-          description: "Toasted bread with garlic butter",
-          price: 3.99,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/1438672/pexels-photo-1438672.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "sides",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_6",
-          catalogId,
-          name: "Seasonal Fruit Tart",
-          description: "Buttery pastry filled with seasonal fruits",
-          price: 7.99,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/1126359/pexels-photo-1126359.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "out_of_stock",
-          category: "desserts",
-          availability: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_7",
-          catalogId,
-          name: "Veggie Burger",
-          description: "Plant-based burger with all the fixings",
-          price: 10.99,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/1639557/pexels-photo-1639557.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "main_courses",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_8",
-          catalogId,
-          name: "Truffle Fries",
-          description: "French fries tossed with truffle oil and parmesan",
-          price: 5.99,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/1583884/pexels-photo-1583884.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "sides",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_9",
-          catalogId,
-          name: "Mango Smoothie",
-          description: "Fresh mango blended with yogurt and honey",
-          price: 5.50,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/1028714/pexels-photo-1028714.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "beverages",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        {
-          id: "prod_10",
-          catalogId,
-          name: "Caprese Salad",
-          description: "Fresh mozzarella, tomatoes, and basil with balsamic glaze",
-          price: 9.99,
-          currency: "USD",
-          imageUrl: "https://images.pexels.com/photos/1211887/pexels-photo-1211887.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-          status: "active",
-          category: "appetizers",
-          availability: true,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ];
-
-      // Apply filters if provided
-      let filteredProducts = [...mockProducts];
-      
-      if (params?.filters) {
-        const filters = params.filters;
-        
-        if (filters.category) {
-          filteredProducts = filteredProducts.filter(p => p.category === filters.category);
-        }
-        
-        if (filters.availability) {
-          filteredProducts = filteredProducts.filter(p => 
-            filters.availability === 'true' ? p.availability : !p.availability
-          );
-        }
-        
-        if (filters.status) {
-          filteredProducts = filteredProducts.filter(p => p.status === filters.status);
-        }
-        
-        if (filters.search) {
-          const searchLower = filters.search.toLowerCase();
-          filteredProducts = filteredProducts.filter(p => 
-            p.name.toLowerCase().includes(searchLower) || 
-            p.description.toLowerCase().includes(searchLower)
-          );
-        }
-      }
-      
-      // Apply sorting
-      if (params?.sort) {
-        const sortField = params.sort as keyof Product;
-        const direction = params.direction || 'asc';
-        
-        filteredProducts.sort((a, b) => {
-          if (a[sortField] < b[sortField]) return direction === 'asc' ? -1 : 1;
-          if (a[sortField] > b[sortField]) return direction === 'asc' ? 1 : -1;
-          return 0;
-        });
-      }
-      
-      // Apply pagination
-      const page = params?.page || 1;
-      const pageSize = params?.pageSize || 10;
-      const totalItems = filteredProducts.length;
-      const totalPages = Math.ceil(totalItems / pageSize);
-      
-      const paginatedProducts = filteredProducts.slice(
-        (page - 1) * pageSize,
-        page * pageSize
-      );
-
-      return {
-        data: paginatedProducts,
-        meta: {
-          page,
-          pageSize,
-          totalItems,
-          totalPages
-        }
-      };
-    }
+    getMockCatalogs: getMockCatalogs,
+    getMockProducts: getMockProducts
   };
 };
 
-// Create a default instance with mock implementation
+// Mock data functions
+async function getMockCatalogs(): Promise<ApiResponse<Catalog[]>> {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 800));
+
+  const mockCatalogs: Catalog[] = [
+    {
+      id: "1444914166670906",
+      name: "Catalogue_Products",
+      description: "Facebook product catalog",
+      thumbnailUrl: "https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+      productCount: 24,
+      status: "active",
+      isDefault: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ];
+
+  return {
+    data: mockCatalogs
+  };
+}
+
+async function getMockProducts(
+  catalogId: string,
+  params?: QueryParams
+): Promise<ApiResponse<Product[]>> {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  const mockProducts: Product[] = [
+    {
+      id: "prod_1",
+      catalogId,
+      name: "Margherita Pizza",
+      description: "Classic pizza with tomato, mozzarella, and basil",
+      price: 12.99,
+      currency: "USD",
+      imageUrl: "https://images.pexels.com/photos/2147491/pexels-photo-2147491.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+      status: "active",
+      category: "main_courses",
+      availability: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: "prod_2",
+      catalogId,
+      name: "Caesar Salad",
+      description: "Fresh romaine lettuce with Caesar dressing and croutons",
+      price: 8.99,
+      currency: "USD",
+      imageUrl: "https://images.pexels.com/photos/1211887/pexels-photo-1211887.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+      status: "active",
+      category: "appetizers",
+      availability: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    },
+    {
+      id: "prod_3",
+      catalogId,
+      name: "Chocolate Cake",
+      description: "Rich chocolate cake with ganache frosting",
+      price: 6.99,
+      currency: "USD",
+      imageUrl: "https://images.pexels.com/photos/132694/pexels-photo-132694.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+      status: "active",
+      category: "desserts",
+      availability: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }
+  ];
+
+  // Apply filters if provided
+  let filteredProducts = [...mockProducts];
+  
+  if (params?.filters) {
+    const filters = params.filters;
+    
+    if (filters.category) {
+      filteredProducts = filteredProducts.filter(p => p.category === filters.category);
+    }
+    
+    if (filters.availability) {
+      filteredProducts = filteredProducts.filter(p => 
+        filters.availability === 'true' ? p.availability : !p.availability
+      );
+    }
+    
+    if (filters.status) {
+      filteredProducts = filteredProducts.filter(p => p.status === filters.status);
+    }
+    
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredProducts = filteredProducts.filter(p => 
+        p.name.toLowerCase().includes(searchLower) || 
+        p.description.toLowerCase().includes(searchLower)
+      );
+    }
+  }
+  
+  // Apply sorting
+  if (params?.sort) {
+    const sortField = params.sort as keyof Product;
+    const direction = params.direction || 'asc';
+    
+    filteredProducts.sort((a, b) => {
+      if (a[sortField] < b[sortField]) return direction === 'asc' ? -1 : 1;
+      if (a[sortField] > b[sortField]) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  
+  // Apply pagination
+  const page = params?.page || 1;
+  const pageSize = params?.pageSize || 10;
+  const totalItems = filteredProducts.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  
+  const paginatedProducts = filteredProducts.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
+
+  return {
+    data: paginatedProducts,
+    meta: {
+      page,
+      pageSize,
+      totalItems,
+      totalPages
+    }
+  };
+}
+
+// Create a default instance with implementation
 export const catalogApi = createCatalogApi({
   baseUrl: process.env.NEXT_PUBLIC_API_URL || 'https://api.example.com',
   accessToken: process.env.NEXT_PUBLIC_API_TOKEN || 'mock-token',

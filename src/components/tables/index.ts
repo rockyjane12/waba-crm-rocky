@@ -1,7 +1,9 @@
 import type { ColumnDef, Row } from "@tanstack/react-table";
 
 // Export data table components
-export { DataTable, DataTablePagination, DataTableViewOptions } from "@/components/ui/table/index";
+export { DataTable } from "@/components/ui/table/index";
+export { DataTablePagination } from "@/components/ui/table/index";
+export { DataTableViewOptions } from "@/components/ui/table/index";
 
 // Export utility components
 export { TableFilters } from "./TableFilters";
