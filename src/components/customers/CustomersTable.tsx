@@ -6,8 +6,8 @@ import {
   DataTable,
   DataTablePagination,
   DataTableViewOptions,
-  Column,
-} from "@/components/ui/table";
+} from "@/components/tables";
+import { Column } from "@/components/ui/table";
 import { StatusBadge } from "@/components/common/StatusBadge";
 import {
   formatCurrency,
