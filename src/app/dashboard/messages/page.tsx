@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { PageContainer } from "@/components/PageContainer";
 import { useCustomers } from "@/hooks/customers/useCustomers";
@@ -60,7 +60,7 @@ export default function MessagesPage() {
     return customers.find(c => c.wa_id === selectedCustomerId);
   }, [customers, selectedCustomerId]);
 
-  const sendMessage = async (content: string) => {
+  const sendMessage = useCallback(async (content: string) => {
     if (!selectedCustomerId) return;
     
     // Find the conversation ID or create a new one
@@ -76,7 +76,7 @@ export default function MessagesPage() {
       timestamp: new Date().toISOString(),
       metadata: {}
     });
-  };
+  }, [selectedCustomerId, createMessage]);
 
   return (
     <PageContainer

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { useCustomers } from "@/hooks/customers/useCustomers";
 import { CustomerCard } from "@/components/CustomerCard";
@@ -50,7 +50,7 @@ export default function CustomersPage() {
   }, [searchTerm, setFilters]);
   
   // Get columns for the DataTable
-  const columns = getCustomerColumns();
+  const columns = useMemo(() => getCustomerColumns(), []);
 
   return (
     <PageContainer
