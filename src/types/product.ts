@@ -1,29 +1,36 @@
-import { BaseEntity } from "./common";
-
 export interface Product {
   id: string;
   name: string;
-  currency: string;
-  availability: string;
   description?: string;
-  image_url: string;
   price: string;
+  currency: string;
   retailer_id: string;
-  visibility: string;
+  availability: "in stock" | "out of stock";
+  image_url: string;
+  url?: string;
+  sale_price?: string;
+  visibility?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ProductFormData {
+  name: string;
+  description?: string;
+  price: string;
+  currency: string;
+  retailer_id: string;
+  availability: "in stock" | "out of stock";
+  image_url?: string;
   url?: string;
   sale_price?: string;
 }
 
-export interface ProductResponse {
-  data: Product[];
-  paging: {
-    cursors: {
-      before: string;
-      after: string;
-    };
-    next?: string;
-    previous?: string;
-  };
+export interface ProductImage {
+  url: string;
+  path: string;
+  size: number;
+  type: string;
 }
 
 export interface ProductFilters {
@@ -39,17 +46,4 @@ export interface ProductFilters {
 export interface ProductSort {
   field: keyof Product;
   direction: 'asc' | 'desc';
-}
-
-export interface ProductFormData extends Omit<Product, 'id'> {
-  id?: string;
-}
-
-export interface ProductTableColumn {
-  key: keyof Product;
-  label: string;
-  sortable?: boolean;
-  editable?: boolean;
-  width?: string;
-  render?: (value: any, product: Product) => React.ReactNode;
 }
