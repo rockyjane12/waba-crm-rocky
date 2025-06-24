@@ -3,16 +3,14 @@ import { useProducts } from "@/hooks/catalog/useProducts";
 import ProductTable from "./ProductTable";
 import ProductGrid from "./ProductGrid";
 import ProductFilterBar from "./ProductFilters";
-import ProductForm from "./ProductForm";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Grid, List, Plus, RefreshCw } from "lucide-react";
+import { ArrowLeft, Grid, List, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Product, ProductFormData } from "@/types/product";
+import { Product } from "@/types/product";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -22,6 +20,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import AddProductButton from "./AddProductButton";
 
 interface ProductManagerProps {
   catalogId: string;
@@ -34,7 +33,6 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
 }) => {
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [viewProductData, setViewProductData] = useState<Product | null>(null);
 
   const {
@@ -54,10 +52,8 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
     isEditing,
     startEditing,
     cancelEditing,
-    createProduct,
     updateProduct,
     deleteProduct,
-    isCreating,
     isUpdating,
     isDeleting,
   } = useProducts(catalogId);
@@ -66,11 +62,6 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
     setIsRefreshing(true);
     await refetch();
     setTimeout(() => setIsRefreshing(false), 500);
-  };
-
-  const handleAddProduct = async (data: ProductFormData) => {
-    await createProduct(data as Omit<Product, 'id'>);
-    setIsAddProductOpen(false);
   };
 
   const handleEditProduct = (product: Product) => {
@@ -131,10 +122,10 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
               Grid
             </Button>
           </div>
-          <Button size="sm" onClick={() => setIsAddProductOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>
+          <AddProductButton 
+            catalogId={catalogId} 
+            onProductAdded={handleRefresh}
+          />
         </div>
       </div>
 
@@ -175,23 +166,6 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
         />
       )}
 
-      {/* Add Product Dialog */}
-      <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Add New Product</DialogTitle>
-            <DialogDescription>
-              Fill in the details to add a new product to your catalog.
-            </DialogDescription>
-          </DialogHeader>
-          <ProductForm
-            onSubmit={handleAddProduct}
-            onCancel={() => setIsAddProductOpen(false)}
-            isSubmitting={isCreating}
-          />
-        </DialogContent>
-      </Dialog>
-
       {/* View Product Dialog */}
       <Dialog open={!!viewProductData} onOpenChange={() => setViewProductData(null)}>
         <DialogContent className="max-w-3xl">
@@ -214,26 +188,6 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                 <div>
                   <h3 className="text-2xl font-bold">{viewProductData.name}</h3>
                   <p className="text-muted-foreground">{viewProductData.description || "No description available"}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    className={
-                      viewProductData.availability === "in stock"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }
-                  >
-                    {viewProductData.availability}
-                  </Badge>
-                  <Badge
-                    className={
-                      viewProductData.visibility === "published"
-                        ? "bg-green-100 text-green-800"
-                        : "bg-gray-100 text-gray-800"
-                    }
-                  >
-                    {viewProductData.visibility}
-                  </Badge>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -276,7 +230,6 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
                       handleEditProduct(viewProductData);
                     }}
                   >
-                    <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
                   <Button

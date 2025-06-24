@@ -22,7 +22,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Card } from "@/components/ui/card";
 import { ImageUpload } from "@/components/product/ImageUpload";
 import { RetailerIdGenerator } from "@/components/product/RetailerIdGenerator";
 import { PriceInput } from "@/components/product/PriceInput";
@@ -35,7 +34,7 @@ const productSchema = z.object({
   name: z.string().min(1, "Product name is required").max(200, "Product name must be less than 200 characters"),
   description: z.string().max(9999, "Description must be less than 9999 characters").optional(),
   price: z.string().min(1, "Price is required").refine(
-    (val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0,
+    (val) => !isNaN(parseFloat(val.replace(/[^0-9.]/g, ""))) && parseFloat(val.replace(/[^0-9.]/g, "")) > 0,
     "Price must be greater than 0"
   ),
   currency: z.string().min(1, "Currency is required"),
@@ -43,13 +42,13 @@ const productSchema = z.object({
   availability: z.enum(["in stock", "out of stock"]),
   url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   sale_price: z.string().refine(
-    (val) => val === "" || (!isNaN(parseFloat(val)) && parseFloat(val) > 0),
+    (val) => val === "" || (!isNaN(parseFloat(val.replace(/[^0-9.]/g, ""))) && parseFloat(val.replace(/[^0-9.]/g, "")) > 0),
     "Sale price must be greater than 0"
   ).optional().or(z.literal("")).refine(
     (val, ctx) => {
       if (!val) return true;
-      const price = parseFloat(ctx.parent.price);
-      const salePrice = parseFloat(val);
+      const price = parseFloat(ctx.parent.price.replace(/[^0-9.]/g, ""));
+      const salePrice = parseFloat(val.replace(/[^0-9.]/g, ""));
       return !price || !salePrice || salePrice < price;
     },
     "Sale price must be less than regular price"
@@ -96,11 +95,11 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${nanoid()}.${fileExt}`;
-      const filePath = `products/${fileName}`;
+      const filePath = `cat_images/${fileName}`;
 
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
-        .from('public')
+        .from('cat_images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -110,7 +109,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('public')
+        .from('cat_images')
         .getPublicUrl(filePath);
 
       return urlData.publicUrl;
@@ -358,7 +357,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
         </div>
 
         <div className="flex justify-end space-x-4 pt-4">
-          <Button type="button" variant="outline">
+          <Button type="button" variant="outline" onClick={() => form.reset()}>
             Cancel
           </Button>
           <Button 

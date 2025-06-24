@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { nanoid } from 'nanoid';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
-import * as formidable from 'formidable';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -42,7 +39,7 @@ export async function POST(request: NextRequest) {
     // Generate a unique file name
     const fileExt = file.name.split('.').pop();
     const fileName = `${nanoid()}.${fileExt}`;
-    const filePath = `products/${fileName}`;
+    const filePath = `${fileName}`;
 
     // Convert file to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
@@ -50,7 +47,7 @@ export async function POST(request: NextRequest) {
 
     // Upload to Supabase storage
     const { data, error } = await supabase.storage
-      .from('public')
+      .from('cat_images')
       .upload(filePath, buffer, {
         contentType: file.type,
         cacheControl: '3600',
@@ -66,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from('public')
+      .from('cat_images')
       .getPublicUrl(filePath);
 
     return NextResponse.json({
@@ -83,9 +80,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
