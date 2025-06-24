@@ -47,3 +47,15 @@ export interface ProductSort {
   field: keyof Product;
   direction: 'asc' | 'desc';
 }
+
+export interface ProductResponse {
+  data: Product[];
+  paging: {
+    cursors: {
+      before: string;
+      after: string;
+    };
+    next?: string;
+    previous?: string;
+  };
+}
