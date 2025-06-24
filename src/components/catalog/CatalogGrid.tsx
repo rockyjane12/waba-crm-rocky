@@ -67,11 +67,15 @@ export const CatalogGrid: React.FC = () => {
             />
             Refresh
           </Button>
+          <Button size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            New Catalog
+          </Button>
         </div>
       </div>
 
       {catalogsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <Card key={i} className="overflow-hidden">
               <Skeleton className="h-48 w-full" />
@@ -99,7 +103,7 @@ export const CatalogGrid: React.FC = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {catalogs.map((catalog) => (
             <CatalogCard
               key={catalog.id}

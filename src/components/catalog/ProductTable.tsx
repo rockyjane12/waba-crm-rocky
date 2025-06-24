@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Product, ProductSort } from "@/types/product";
 import { ChevronUp, ChevronDown, Edit, Trash, Eye, Save, X, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { 
   Tooltip,
@@ -46,7 +45,7 @@ interface ProductTableProps {
     totalPages: number;
   };
   onPageChange: (page: number) => void;
-  onPageSizeChange: (pageSize: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
   editingProduct: string | null;
   isEditing: boolean;
   startEditing: (productId: string) => void;
@@ -217,7 +216,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="border rounded-md overflow-hidden">
+      <div className="border rounded-md overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
@@ -472,7 +471,7 @@ const ProductTable: React.FC<ProductTableProps> = ({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="text-sm text-muted-foreground">
           Showing {(pagination.page - 1) * pagination.pageSize + 1} to{" "}
           {Math.min(

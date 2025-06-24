@@ -4,7 +4,6 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash, Eye } from "lucide-react";
-import { formatCurrency } from "@/lib/utils/format";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -60,7 +59,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {products.map((product) => (
-        <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow">
+        <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow flex flex-col">
           <div className="relative h-48 w-full bg-gray-100">
             <img
               src={product.image_url}
@@ -79,17 +78,19 @@ const ProductGrid: React.FC<ProductGridProps> = ({
               >
                 {product.availability}
               </Badge>
-              <Badge
-                className={cn(
-                  "capitalize",
-                  getVisibilityColor(product.visibility)
-                )}
-              >
-                {product.visibility}
-              </Badge>
+              {product.visibility && (
+                <Badge
+                  className={cn(
+                    "capitalize",
+                    getVisibilityColor(product.visibility)
+                  )}
+                >
+                  {product.visibility}
+                </Badge>
+              )}
             </div>
           </div>
-          <CardContent className="p-4">
+          <CardContent className="p-4 flex-1">
             <h3 className="font-semibold text-lg mb-1 line-clamp-1">{product.name}</h3>
             <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
               {product.description || "No description available"}
