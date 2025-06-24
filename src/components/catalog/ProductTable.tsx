@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Product, ProductSort } from "@/types/product";
-import { ChevronUp, ChevronDown, Edit, Trash, Eye, Save, X } from "lucide-react";
+import { ChevronUp, ChevronDown, Edit, Trash, Eye, Save, X, Package } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
@@ -156,6 +156,15 @@ const ProductTable: React.FC<ProductTableProps> = ({
       <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
         <h3 className="text-lg font-semibold mb-2">Error loading products</h3>
         <p>{error.message}</p>
+        {error.message.includes("access token") && (
+          <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+            <p className="text-sm text-yellow-800">
+              <strong>Access Token Issue:</strong> Your Facebook Graph API access token has expired. 
+              Please update the <code>NEXT_PUBLIC_WABA_ACCESS_TOKEN</code> environment variable 
+              with a new valid token and restart the development server.
+            </p>
+          </div>
+        )}
         <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
           Try Again
         </Button>
