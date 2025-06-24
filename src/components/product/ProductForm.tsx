@@ -24,7 +24,6 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/product/ImageUpload";
 import { RetailerIdGenerator } from "@/components/product/RetailerIdGenerator";
-import { PriceInput } from "@/components/product/PriceInput";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
 import { nanoid } from "nanoid";
@@ -33,26 +32,12 @@ import { nanoid } from "nanoid";
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required").max(200, "Product name must be less than 200 characters"),
   description: z.string().max(9999, "Description must be less than 9999 characters").optional(),
-  price: z.string().min(1, "Price is required").refine(
-    (val) => !isNaN(parseFloat(val.replace(/[^0-9.]/g, ""))) && parseFloat(val.replace(/[^0-9.]/g, "")) > 0,
-    "Price must be greater than 0"
-  ),
+  price: z.string().min(1, "Price is required"),
   currency: z.string().min(1, "Currency is required"),
   retailer_id: z.string().min(1, "Retailer ID is required"),
   availability: z.enum(["in stock", "out of stock"]),
   url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
-  sale_price: z.string().refine(
-    (val) => val === "" || (!isNaN(parseFloat(val.replace(/[^0-9.]/g, ""))) && parseFloat(val.replace(/[^0-9.]/g, "")) > 0),
-    "Sale price must be greater than 0"
-  ).optional().or(z.literal("")).refine(
-    (val, ctx) => {
-      if (!val) return true;
-      const price = parseFloat(ctx.parent.price.replace(/[^0-9.]/g, ""));
-      const salePrice = parseFloat(val.replace(/[^0-9.]/g, ""));
-      return !price || !salePrice || salePrice < price;
-    },
-    "Sale price must be less than regular price"
-  ),
+  sale_price: z.string().optional().or(z.literal("")),
   image: z.instanceof(File).optional(),
   imageUrl: z.string().url("Must be a valid URL").optional(),
 });
@@ -201,11 +186,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
                   <FormItem>
                     <FormLabel>Price*</FormLabel>
                     <FormControl>
-                      <PriceInput 
-                        value={field.value} 
-                        onChange={field.onChange}
-                        currency={form.watch("currency")}
-                      />
+                      <Input placeholder="£0.00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -246,32 +227,10 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
                 <FormItem>
                   <FormLabel>Sale Price</FormLabel>
                   <FormControl>
-                    <PriceInput 
-                      value={field.value} 
-                      onChange={field.onChange}
-                      currency={form.watch("currency")}
-                      placeholder="Enter sale price (optional)"
-                    />
+                    <Input placeholder="£0.00" {...field} />
                   </FormControl>
                   <FormDescription>
                     Must be less than regular price
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/product" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Optional external link to the product
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -350,6 +309,23 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
                       }
                     />
                   </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="url"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product URL</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://example.com/product" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Optional external link to the product
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />

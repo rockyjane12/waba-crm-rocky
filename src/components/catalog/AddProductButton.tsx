@@ -4,9 +4,11 @@ import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import ProductModal from "@/components/product/ProductModal";
-import { ProductFormData } from "@/types/product";
+import ProductForm from "@/components/product/ProductForm";
 import { toast } from "sonner";
 
 interface AddProductButtonProps {
@@ -18,7 +20,7 @@ export function AddProductButton({ catalogId, onProductAdded }: AddProductButton
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (data: ProductFormData) => {
+  const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
       // In a real application, you would submit to your API
@@ -50,12 +52,16 @@ export function AddProductButton({ catalogId, onProductAdded }: AddProductButton
       <Dialog open={isOpen} onOpenChange={(open) => {
         if (!isSubmitting) setIsOpen(open);
       }}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden">
-          <ProductModal
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Add New Product</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new product to your catalog.
+            </DialogDescription>
+          </DialogHeader>
+          <ProductForm
             onSubmit={handleSubmit}
-            onCancel={() => setIsOpen(false)}
             isSubmitting={isSubmitting}
-            catalogId={catalogId}
           />
         </DialogContent>
       </Dialog>
