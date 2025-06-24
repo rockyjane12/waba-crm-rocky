@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 interface ImageUploadProps {
   onChange: (file: File | null) => void;
@@ -15,6 +16,8 @@ export function ImageUpload({ onChange, value, previewUrl, className }: ImageUpl
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(previewUrl || null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const handleFileChange = (file: File | null) => {
     setError(null);
@@ -38,28 +41,45 @@ export function ImageUpload({ onChange, value, previewUrl, className }: ImageUpl
       return;
     }
 
+    // Start validation process
+    setIsValidating(true);
+    setProgress(10);
+
     // Create a preview URL
     const preview = URL.createObjectURL(file);
     setLocalPreview(preview);
+    setProgress(30);
 
     // Check image dimensions
     const img = new Image();
     img.onload = () => {
+      setProgress(80);
       URL.revokeObjectURL(preview);
+      
       if (img.width < 500 || img.height < 500) {
         setError("Image must be at least 500x500 pixels");
         setLocalPreview(null);
         onChange(null);
       } else {
+        setProgress(100);
         onChange(file);
       }
+      
+      setTimeout(() => {
+        setIsValidating(false);
+        setProgress(0);
+      }, 500);
     };
+    
     img.onerror = () => {
       URL.revokeObjectURL(preview);
       setError("Failed to load image");
       setLocalPreview(null);
       onChange(null);
+      setIsValidating(false);
+      setProgress(0);
     };
+    
     img.src = preview;
   };
 
@@ -135,7 +155,7 @@ export function ImageUpload({ onChange, value, previewUrl, className }: ImageUpl
               type="button"
               variant="destructive"
               size="icon"
-              className="absolute top-2 right-2"
+              className="absolute top-2 right-2 shadow-md"
               onClick={handleRemove}
             >
               <X className="h-4 w-4" />
@@ -161,6 +181,13 @@ export function ImageUpload({ onChange, value, previewUrl, className }: ImageUpl
               <Upload className="mr-2 h-4 w-4" />
               Select Image
             </Button>
+          </div>
+        )}
+        
+        {isValidating && (
+          <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white p-2">
+            <div className="text-xs mb-1 text-center">Validating image...</div>
+            <Progress value={progress} className="h-1" />
           </div>
         )}
       </div>

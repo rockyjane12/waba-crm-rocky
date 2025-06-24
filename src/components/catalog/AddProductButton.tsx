@@ -4,12 +4,10 @@ import { Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
-import ProductForm from "@/components/product/ProductForm";
+import ProductModal from "@/components/product/ProductModal";
 import { ProductFormData } from "@/types/product";
+import { toast } from "sonner";
 
 interface AddProductButtonProps {
   catalogId: string;
@@ -29,11 +27,14 @@ export function AddProductButton({ catalogId, onProductAdded }: AddProductButton
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
+      toast.success("Product added successfully!");
+      
       // Close modal and refresh products
       setIsOpen(false);
       onProductAdded();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding product:", error);
+      toast.error(`Failed to add product: ${error.message || "Unknown error"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -46,17 +47,15 @@ export function AddProductButton({ catalogId, onProductAdded }: AddProductButton
         Add Product
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Add New Product</DialogTitle>
-            <DialogDescription>
-              Fill in the details to add a new product to your catalog.
-            </DialogDescription>
-          </DialogHeader>
-          <ProductForm
+      <Dialog open={isOpen} onOpenChange={(open) => {
+        if (!isSubmitting) setIsOpen(open);
+      }}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden">
+          <ProductModal
             onSubmit={handleSubmit}
+            onCancel={() => setIsOpen(false)}
             isSubmitting={isSubmitting}
+            catalogId={catalogId}
           />
         </DialogContent>
       </Dialog>
