@@ -1,6 +1,20 @@
+"use client";
+
 import { useState, useEffect, createContext, useContext } from 'react';
-import { setupCSRFToken, getStoredCSRFToken } from '@/lib/csrf';
-import { createHash } from 'crypto';
+
+// Helper function to get cookie value
+function getCookieValue(name: string): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.trim().split('=');
+    if (cookieName === name) {
+      return cookieValue;
+    }
+  }
+  return null;
+}
 
 interface User {
   id: string;
@@ -30,16 +44,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkSession = async () => {
     try {
-      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+      // Get CSRF token from cookie
+      const csrfToken = getCookieValue('csrf_token');
+      
+      if (!csrfToken) {
+        console.log('No CSRF token found in cookie');
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch('/api/auth/session', {
         headers: {
           'x-csrf-token': csrfToken,
         },
+        credentials: 'include',
       });
-      const data = await response.json();
       
-      if (data.user) {
-        setUser(data.user);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user) {
+          setUser(data.user);
+        }
+      } else {
+        console.error('Session check failed:', response.status);
       }
     } catch (error) {
       console.error('Session check failed:', error);
@@ -53,13 +80,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setLoading(true);
 
-      // Ensure CSRF token is set up
-      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+      // Get CSRF token from cookie
+      const csrfToken = getCookieValue('csrf_token');
+      
+      if (!csrfToken) {
+        throw new Error('CSRF token not found. Please refresh the page.');
+      }
 
-      // Hash password before sending
-      const hashedPassword = createHash('sha256')
-        .update(password)
-        .digest('hex');
+      // Log the CSRF token being sent
+      console.log('[AUTH] Using CSRF token:', csrfToken);
 
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -69,8 +98,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         body: JSON.stringify({
           email,
-          password: hashedPassword,
+          password,
         }),
+        credentials: 'include', // Include cookies in the request
       });
 
       const data = await response.json();
@@ -92,14 +122,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
-      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+      const csrfToken = getCookieValue('csrf_token');
       
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'x-csrf-token': csrfToken,
-        },
-      });
+      if (csrfToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: {
+            'x-csrf-token': csrfToken,
+          },
+          credentials: 'include',
+        });
+      }
       setUser(null);
     } catch (error) {
       console.error('Logout failed:', error);

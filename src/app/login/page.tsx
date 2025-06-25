@@ -12,7 +12,7 @@ import {
 import { Container } from "@/components/ui/container";
 import { MessageCircle } from "lucide-react";
 import EmailLogin from "@/modules/auth/components/EmailLogin";
-import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { useAuth, AuthProvider } from "@/modules/auth/context/AuthContext";
 import { Loading } from "@/components/ui/loading";
 import { withPageErrorBoundary } from "@/components/hoc/withPageErrorBoundary";
 import Link from "next/link";
@@ -85,4 +85,8 @@ function LoginPage() {
   );
 }
 
-export default withPageErrorBoundary(LoginPage);
+export default withPageErrorBoundary(() => (
+  <AuthProvider>
+    <LoginPage />
+  </AuthProvider>
+));

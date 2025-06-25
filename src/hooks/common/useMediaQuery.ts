@@ -7,15 +7,18 @@ export function useMediaQuery(query: string): boolean {
 
   useEffect(() => {
     const media = window.matchMedia(query);
-    if (media.matches !== matches) {
-      setMatches(media.matches);
-    }
+    // Set initial value
+    setMatches(media.matches);
 
+    // Define listener
     const listener = () => setMatches(media.matches);
+    
+    // Add listener
     media.addEventListener("change", listener);
 
+    // Cleanup
     return () => media.removeEventListener("change", listener);
-  }, [matches, query]);
+  }, [query]); // Remove matches from dependencies
 
   return matches;
 }

@@ -1,7 +1,7 @@
 import { validateEnvVariables, REQUIRED_ENV_VARS } from "@/lib/utils/env";
-import { AppProvider } from "@/providers/AppProvider";
 import { Metadata } from "next";
 import { RootErrorBoundary } from "./RootErrorBoundary";
+import { AuthProviderWrapper } from "@/components/AuthProviderWrapper";
 import "@/styles/globals.css";
 
 // Validate required environment variables
@@ -20,9 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <AppProvider>
+        <AuthProviderWrapper>
           <RootErrorBoundary>{children}</RootErrorBoundary>
-        </AppProvider>
+        </AuthProviderWrapper>
       </body>
     </html>
   );

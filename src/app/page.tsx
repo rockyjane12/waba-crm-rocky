@@ -16,7 +16,7 @@ import {
   DollarSign,
   Smile,
 } from "lucide-react";
-import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { useAuth } from "@/modules/auth/context/AuthContext";
 import { Loading } from "@/components/ui/loading";
 
 export default function Home() {

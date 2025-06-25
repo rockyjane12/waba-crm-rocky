@@ -32,55 +32,97 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password before sending to Supabase
-    // This adds an extra layer of security during transmission
-    const hashedPassword = createHash("sha256")
-      .update(password)
-      .digest("hex");
+    // Get CSRF tokens
+    const headerToken = request.headers.get("x-csrf-token");
+    const cookieToken = request.cookies.get("csrf_token")?.value;
 
-    // Verify CSRF token from cookie
-    const csrfToken = request.cookies.get("csrf_token")?.value;
-
-    if (!csrfToken || csrfToken !== process.env.CSRF_SECRET) {
+    console.log("[LOGIN API] CSRF header token:", headerToken);
+    console.log("[LOGIN API] CSRF cookie token:", cookieToken);
+    
+    // Validate CSRF token - header token should match cookie token
+    if (!headerToken || !cookieToken || headerToken !== cookieToken) {
+      console.error("[LOGIN API] CSRF token mismatch");
       return NextResponse.json(
         { error: "Invalid CSRF token" },
         { status: 403 }
       );
     }
 
-    // Attempt login with Supabase
+    console.log("[LOGIN API] Attempting Supabase login for email:", email);
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
-      password: hashedPassword,
+      password,
     });
 
     if (error) {
-      // Log error securely (avoid exposing sensitive details)
-      console.error("Login error:", {
+      console.error("[LOGIN API] Supabase login error:", {
         timestamp: new Date().toISOString(),
-        email: email.slice(0, 3) + "***", // Log partial email for debugging
+        email: email.slice(0, 3) + "***",
         error: error.message,
+        errorCode: error.status,
       });
 
       return NextResponse.json(
-        { error: "Invalid credentials" },
+        { error: error.message },
+        { status: error.status || 401 }
+      );
+    }
+
+    if (!data.user || !data.session) {
+      console.error("[LOGIN API] No user or session returned from Supabase");
+      return NextResponse.json(
+        { error: "Authentication failed" },
         { status: 401 }
       );
     }
 
-    // Remove sensitive data before sending response
-    const safeUserData = {
-      id: data.user?.id,
-      email: data.user?.email,
-      lastSignInAt: data.user?.last_sign_in_at,
-    };
+    console.log("[LOGIN API] Login successful for user:", data.user.id);
 
-    return NextResponse.json({
-      user: safeUserData,
+    // Create the response with the session
+    const response = NextResponse.json({
+      user: {
+        id: data.user.id,
+        email: data.user.email,
+        lastSignInAt: data.user.last_sign_in_at,
+      },
       session: {
-        expires_at: data.session?.expires_at,
+        expires_at: data.session.expires_at,
       },
     });
+
+    // Set Supabase session cookies
+    const { access_token, refresh_token } = data.session;
+    
+    // Set access token cookie
+    response.cookies.set('sb-access-token', access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60, // 1 hour
+    });
+
+    // Set refresh token cookie
+    response.cookies.set('sb-refresh-token', refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 1 week
+    });
+
+    // Set auth event cookie for client-side detection
+    response.cookies.set('sb-auth-event', 'SIGNED_IN', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 10, // Short-lived, just for event handling
+    });
+
+    console.log("[LOGIN API] Set session cookie and returning response");
+    return response;
   } catch (error) {
     console.error("Unexpected error during login:", error);
     return NextResponse.json(

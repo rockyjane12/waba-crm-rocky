@@ -1,8 +1,14 @@
-import { randomBytes } from 'crypto';
-
-// Generate a CSRF token
+// Generate a CSRF token using browser-compatible crypto
 export function generateCSRFToken(): string {
-  return randomBytes(32).toString('hex');
+  if (typeof window !== 'undefined' && window.crypto) {
+    // Browser environment
+    const array = new Uint8Array(32);
+    window.crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  } else {
+    // Fallback for non-browser environments
+    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }
 }
 
 // Store the CSRF token in localStorage
@@ -22,6 +28,20 @@ export function getStoredCSRFToken(): string | null {
 
 // Generate and store a new CSRF token
 export function setupCSRFToken(): string {
+  // First check if we have a CSRF token from the cookie
+  if (typeof window !== 'undefined' && document.cookie) {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf_token' && value) {
+        // Store the cookie token in localStorage for consistency
+        storeCSRFToken(value);
+        return value;
+      }
+    }
+  }
+  
+  // If no cookie token, generate a new one
   const token = generateCSRFToken();
   storeCSRFToken(token);
   return token;
