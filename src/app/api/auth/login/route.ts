@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/rate-limit";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 
 // Rate limiter for login attempts
 const limiter = rateLimit({
