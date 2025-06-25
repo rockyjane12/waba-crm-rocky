@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { catalogApi } from "@/services/api/catalogApi";
+import { catalogApiClient } from "@/services/api/catalogApiClient";
 import { Catalog } from "@/types/catalog";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -16,8 +16,8 @@ export const useCatalogs = () => {
     queryKey: ["catalogs"],
     queryFn: async () => {
       try {
-        // Use the Facebook Graph API to fetch catalogs
-        const response = await catalogApi.getCatalogs();
+        // Use the new API route to fetch catalogs
+        const response = await catalogApiClient.getCatalogs();
         
         // Add default product count since the API doesn't provide it
         const catalogsWithCount = response.data.map(catalog => ({

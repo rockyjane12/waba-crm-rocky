@@ -25,8 +25,6 @@ import { Switch } from "@/components/ui/switch";
 import { ImageUpload } from "@/components/product/ImageUpload";
 import { RetailerIdGenerator } from "@/components/product/RetailerIdGenerator";
 import { toast } from "sonner";
-import { supabase } from "@/lib/supabase/client";
-import { nanoid } from "nanoid";
 
 // Form validation schema
 const productSchema = z.object({
@@ -48,9 +46,12 @@ interface ProductFormProps {
   onSubmit: (data: any) => Promise<void>;
   initialData?: Partial<ProductFormValues>;
   isSubmitting?: boolean;
+  onCancel?: () => void;
+  showHeader?: boolean;
+  renderFooter?: boolean;
 }
 
-export function ProductForm({ onSubmit, initialData, isSubmitting = false }: ProductFormProps) {
+export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCancel, showHeader = true, renderFooter = true }: ProductFormProps) {
   const [imageUploading, setImageUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
 
@@ -69,35 +70,26 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
     },
   });
 
-  const handleImageUpload = useCallback(async (file: File): Promise<string> => {
+  const handleImageUpload = useCallback(async (file: File) => {
     setImageUploading(true);
     try {
-      // Validate file size (8MB max)
-      if (file.size > 8 * 1024 * 1024) {
-        throw new Error("Image size must be less than 8MB");
+      // Create FormData for the API request
+      const formData = new FormData();
+      formData.append('image', file);
+
+      // Upload via API route
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
       }
 
-      // Create a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${nanoid()}.${fileExt}`;
-      const filePath = `cat_images/${fileName}`;
-
-      // Upload to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('cat_images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) throw error;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('cat_images')
-        .getPublicUrl(filePath);
-
-      return urlData.publicUrl;
+      const data = await response.json();
+      return data.url;
     } catch (error: any) {
       toast.error(`Image upload failed: ${error.message}`);
       throw error;
@@ -108,14 +100,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
 
   const handleFormSubmit = async (values: ProductFormValues) => {
     try {
-      let imageUrl = values.imageUrl;
-
-      // If there's a new image file, upload it
-      if (values.image) {
-        imageUrl = await handleImageUpload(values.image);
-      }
-
-      // Prepare the final data for submission
+      // Only use imageUrl, not file
       const productData = {
         name: values.name,
         description: values.description || "",
@@ -125,9 +110,8 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
         availability: values.availability,
         url: values.url || "",
         sale_price: values.sale_price || "",
-        image_url: imageUrl,
+        image_url: values.imageUrl,
       };
-
       await onSubmit(productData);
     } catch (error: any) {
       toast.error(`Failed to submit product: ${error.message}`);
@@ -136,220 +120,280 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false }: Pro
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <form id="add-product-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+        {showHeader && (
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-2">Add New Product</h2>
+            <p className="text-muted-foreground">Fill in the details to add a new product to your catalog.</p>
+          </div>
+        )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
           {/* Left Column */}
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product Name*</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter product name" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    1-200 characters
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter product description" 
-                      className="min-h-[120px]" 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Optional, up to 9999 characters
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-8">
+            <div className="bg-muted/5 rounded-lg p-4 space-y-4">
+              <h3 className="text-lg font-semibold text-primary">Basic Info</h3>
               <FormField
                 control={form.control}
-                name="price"
+                name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price*</FormLabel>
+                    <FormLabel className="font-medium">Product Name*</FormLabel>
                     <FormControl>
-                      <Input placeholder="£0.00" {...field} />
+                      <Input 
+                        placeholder="Enter product name" 
+                        {...field} 
+                        className="bg-background" 
+                      />
                     </FormControl>
+                    <FormDescription>
+                      1-200 characters
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
-                name="currency"
+                name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Currency*</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="GBP">GBP (£)</SelectItem>
-                        <SelectItem value="USD">USD ($)</SelectItem>
-                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel className="font-medium">Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter product description" 
+                        className="min-h-[120px] bg-background resize-y" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Optional, up to 9999 characters
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="sale_price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Sale Price</FormLabel>
-                  <FormControl>
-                    <Input placeholder="£0.00" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Must be less than regular price
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="bg-muted/5 rounded-lg p-4 space-y-4">
+              <h3 className="text-lg font-semibold text-primary">Pricing</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="price"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-medium">Price*</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="£0.00" 
+                          {...field} 
+                          className="bg-background" 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-medium">Currency*</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Select currency" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="GBP">GBP (£)</SelectItem>
+                          <SelectItem value="USD">USD ($)</SelectItem>
+                          <SelectItem value="EUR">EUR (€)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <FormField
+                control={form.control}
+                name="sale_price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium">Sale Price</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="£0.00" 
+                        {...field} 
+                        className="bg-background" 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Must be less than regular price
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
-            <FormField
-              control={form.control}
-              name="image"
-              render={({ field: { value, onChange, ...fieldProps } }) => (
-                <FormItem>
-                  <FormLabel>Product Image*</FormLabel>
-                  <FormControl>
-                    <ImageUpload
-                      onChange={(file) => {
-                        onChange(file);
-                        if (file) {
-                          const url = URL.createObjectURL(file);
-                          setImagePreview(url);
-                        }
-                      }}
-                      value={value as File}
-                      previewUrl={imagePreview}
-                      {...fieldProps}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    500x500px minimum, 8MB maximum
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="retailer_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Retailer ID*</FormLabel>
-                  <div className="flex gap-2">
+          <div className="space-y-8">
+            <div className="bg-muted/5 rounded-lg p-4 space-y-4">
+              <h3 className="text-lg font-semibold text-primary">Image</h3>
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field: { value, onChange, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium">Product Image*</FormLabel>
                     <FormControl>
-                      <Input placeholder="Unique identifier" {...field} />
+                      <div className="rounded-lg border-2 border-dashed border-primary/40 bg-background/50 p-6 flex flex-col items-center justify-center min-h-[240px]">
+                        <ImageUpload
+                          onChange={async (file) => {
+                            if (file) {
+                              setImageUploading(true);
+                              try {
+                                const url = await handleImageUpload(file);
+                                setImagePreview(url);
+                                form.setValue("imageUrl", url, { shouldValidate: true });
+                                onChange(undefined); // clear file from form state
+                              } catch (error) {
+                                setImagePreview(null);
+                                form.setValue("imageUrl", "", { shouldValidate: true });
+                                onChange(undefined);
+                              } finally {
+                                setImageUploading(false);
+                              }
+                            } else {
+                              setImagePreview(null);
+                              form.setValue("imageUrl", "", { shouldValidate: true });
+                              onChange(undefined);
+                            }
+                          }}
+                          value={undefined}
+                          previewUrl={imagePreview}
+                          {...fieldProps}
+                        />
+                      </div>
                     </FormControl>
-                    <RetailerIdGenerator
-                      onGenerate={(id) => form.setValue("retailer_id", id)}
-                    />
-                  </div>
-                  <FormDescription>
-                    Unique identifier for this product
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="availability"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Availability</FormLabel>
                     <FormDescription>
-                      Is this product currently in stock?
+                      500x500px minimum, 8MB maximum
                     </FormDescription>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value === "in stock"}
-                      onCheckedChange={(checked) => 
-                        field.onChange(checked ? "in stock" : "out of stock")
-                      }
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product URL</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://example.com/product" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Optional external link to the product
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="bg-muted/5 rounded-lg p-4 space-y-4">
+              <h3 className="text-lg font-semibold text-primary">Additional Info</h3>
+              <FormField
+                control={form.control}
+                name="retailer_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium">Retailer ID*</FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input 
+                          placeholder="Unique identifier" 
+                          {...field} 
+                          className="bg-background" 
+                        />
+                      </FormControl>
+                      <RetailerIdGenerator
+                        onGenerate={(id) => form.setValue("retailer_id", id)}
+                      />
+                    </div>
+                    <FormDescription>
+                      Unique identifier for this product
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="availability"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border bg-background p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base font-medium">Availability</FormLabel>
+                      <FormDescription>
+                        Is this product currently in stock?
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value === "in stock"}
+                        onCheckedChange={(checked) => 
+                          field.onChange(checked ? "in stock" : "out of stock")
+                        }
+                        aria-label="Toggle product availability"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="font-medium">Product URL</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="https://example.com/product" 
+                        {...field} 
+                        className="bg-background" 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Optional external link to the product
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end space-x-4 pt-4">
-          <Button type="button" variant="outline" onClick={() => form.reset()}>
-            Cancel
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={isSubmitting || imageUploading}
-          >
-            {(isSubmitting || imageUploading) ? (
-              <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
-                {imageUploading ? 'Uploading Image...' : 'Saving...'}
-              </>
-            ) : (
-              'Save Product'
-            )}
-          </Button>
-        </div>
+        {renderFooter && (
+          <div className="sticky bottom-0 left-0 right-0 w-full z-30">
+            <div className="flex flex-col sm:flex-row sm:justify-end items-center gap-2 px-4 py-4 bg-background/95 border-t shadow-lg">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                aria-label="Cancel add product"
+                className="rounded-full px-6 py-2"
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || imageUploading}
+                aria-label="Save product"
+                className="rounded-full px-6 py-2 shadow-md"
+              >
+                {(isSubmitting || imageUploading) ? (
+                  <>
+                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                    {imageUploading ? 'Uploading Image...' : 'Save Product'}
+                  </>
+                ) : (
+                  'Save Product'
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </form>
     </Form>
   );

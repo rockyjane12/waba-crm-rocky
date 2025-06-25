@@ -149,11 +149,11 @@ export function ProductModal({
       // Create a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${nanoid()}.${fileExt}`;
-      const filePath = `cat_images/${fileName}`;
+      const filePath = `catalog-item-images/${fileName}`;
 
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
-        .from('cat_images')
+        .from('catalog-item-images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -163,7 +163,7 @@ export function ProductModal({
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('cat_images')
+        .from('catalog-item-images')
         .getPublicUrl(filePath);
 
       return urlData.publicUrl;

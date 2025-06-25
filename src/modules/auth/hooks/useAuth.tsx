@@ -1,143 +1,117 @@
-import { useContext, useCallback } from "react";
-import { AuthContext } from "../context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { BusinessData } from "../types/auth.types";
-import { toast } from "sonner";
+import { useState, useEffect, createContext, useContext } from 'react';
+import { setupCSRFToken, getStoredCSRFToken } from '@/lib/csrf';
+import { createHash } from 'crypto';
+
+interface User {
+  id: string;
+  email: string;
+  lastSignInAt: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check for existing session on mount
+    checkSession();
+  }, []);
+
+  const checkSession = async () => {
+    try {
+      const response = await fetch('/api/auth/session');
+      const data = await response.json();
+      
+      if (data.user) {
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.error('Session check failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      // Ensure CSRF token is set up
+      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+
+      // Hash password before sending
+      const hashedPassword = createHash('sha256')
+        .update(password)
+        .digest('hex');
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrfToken,
+        },
+        body: JSON.stringify({
+          email,
+          password: hashedPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      setUser(data.user);
+      return data;
+    } catch (error: any) {
+      setError(error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      setLoading(true);
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'x-csrf-token': getStoredCSRFToken() || '',
+        },
+      });
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, error, signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  
-  // Add enhanced signIn method with error handling
-  const signIn = useCallback(async (email: string, password: string) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) throw error;
-      return data;
-    } catch (error: any) {
-      console.error("Sign in error:", error.message);
-      throw error;
-    }
-  }, []);
-  
-  // Add enhanced signUp method with business data
-  const signUp = useCallback(async (
-    email: string, 
-    password: string, 
-    role: string,
-    businessData?: BusinessData
-  ) => {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            role,
-            businessName: businessData?.businessName || email.split("@")[0],
-            businessCategory: businessData?.businessCategory || "",
-            email: email,
-            email_verified: false,
-            phone_verified: false,
-          },
-          emailRedirectTo: `${window.location.origin}/login`,
-        },
-      });
-      
-      if (error) throw error;
-      
-      // If signup successful, create WABA profile
-      if (data.user) {
-        try {
-          await setupUserWabaProfile(
-            data.user.id,
-            businessData?.businessName || email.split("@")[0],
-            businessData?.businessCategory || "",
-          );
-        } catch (profileError) {
-          console.error("Failed to create WABA profile:", profileError);
-          // Don't throw here - user is created but profile setup failed
-        }
-      }
-      
-      return { data, error: null };
-    } catch (error: any) {
-      console.error("Sign up error:", error.message);
-      return { data: null, error };
-    }
-  }, []);
-  
-  // Add signOut method
-  const signOut = useCallback(async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (error: any) {
-      console.error("Sign out error:", error.message);
-      toast.error("Failed to sign out: " + error.message);
-      throw error;
-    }
-  }, []);
-  
-  // Helper function to set up WABA profile
-  const setupUserWabaProfile = async (
-    userId: string,
-    businessName: string = "",
-    businessCategory: string = "",
-  ) => {
-    try {
-      // Check if user already has a WABA profile
-      const { data: existingProfile, error: checkError } = await supabase
-        .from("waba_profiles")
-        .select("*")
-        .eq("user_id", userId)
-        .single();
-
-      if (checkError && checkError.code !== "PGRST116") {
-        console.error("Error checking WABA profile:", checkError);
-      }
-
-      // Only create a profile if one doesn't exist
-      if (!existingProfile) {
-        const { error: profileError } = await supabase
-          .from("waba_profiles")
-          .insert({
-            user_id: userId,
-            business_name: businessName || "New Business",
-            status: "PENDING",
-            metadata: {
-              role: "WABA_ADMIN",
-              businessCategory: businessCategory,
-            },
-          });
-
-        if (profileError) {
-          console.error("Error creating WABA profile:", profileError);
-          return { success: false, error: profileError };
-        } else {
-          console.log("WABA profile created successfully");
-          return { success: true };
-        }
-      }
-
-      return { success: true, existing: true };
-    } catch (error) {
-      console.error("Unexpected error during profile setup:", error);
-      return { success: false, error };
-    }
-  };
-  
-  return {
-    ...context,
-    signIn,
-    signUp,
-    signOut
-  };
+  return context;
 }

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       // Generate a unique file name
       const fileExt = file.name.split('.').pop();
       const fileName = `${nanoid()}.${fileExt}`;
-      const filePath = `cat_images/${fileName}`;
+      const filePath = `catalog-item-images/${fileName}`;
 
       // Convert file to ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
-        .from('cat_images')
+        .from('catalog-item-images')
         .upload(filePath, buffer, {
           contentType: file.type,
           cacheControl: '3600',
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('cat_images')
+        .from('catalog-item-images')
         .getPublicUrl(filePath);
 
       return NextResponse.json({

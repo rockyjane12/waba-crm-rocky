@@ -1,94 +1,89 @@
-"use client";
+import { useState, useEffect, createContext, useContext } from 'react';
+import { setupCSRFToken, getStoredCSRFToken } from '@/lib/csrf';
+import { createHash } from 'crypto';
 
-import React, { createContext, useState, useEffect } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+interface User {
+  id: string;
+  email: string;
+  lastSignInAt: string;
+}
 
 interface AuthContextType {
   user: User | null;
-  session: Session | null;
   loading: boolean;
-  error: Error | null;
+  error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, role: string, businessData?: any) => Promise<any>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    const initializeAuth = async () => {
-      try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to initialize auth'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-
-    // Listen for changes on auth state (signed in, signed out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      setError(null);
-    });
-
-    return () => subscription.unsubscribe();
+    // Check for existing session on mount
+    checkSession();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const checkSession = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+      const response = await fetch('/api/auth/session', {
+        headers: {
+          'x-csrf-token': csrfToken,
+        },
       });
-      if (error) throw error;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to sign in'));
-      throw err;
+      const data = await response.json();
+      
+      if (data.user) {
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.error('Session check failed:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, role: string, businessData?: any) => {
+  const signIn = async (email: string, password: string) => {
     try {
-      setLoading(true);
       setError(null);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { 
-            role,
-            businessName: businessData?.businessName || email.split("@")[0],
-            businessCategory: businessData?.businessCategory || "",
-          },
+      setLoading(true);
+
+      // Ensure CSRF token is set up
+      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+
+      // Hash password before sending
+      const hashedPassword = createHash('sha256')
+        .update(password)
+        .digest('hex');
+
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrfToken,
         },
+        body: JSON.stringify({
+          email,
+          password: hashedPassword,
+        }),
       });
-      
-      if (error) throw error;
-      return { data, error: null };
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to sign up'));
-      return { data: null, error: err };
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      setUser(data.user);
+      return data;
+    } catch (error: any) {
+      setError(error.message);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -97,36 +92,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
-      setError(null);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
       
-      // Clear user and session state
-      setUser(null);
-      setSession(null);
-      
-      // Clear any stored tokens or user data
-      localStorage.removeItem("supabase.auth.token");
-      sessionStorage.clear();
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to sign out'));
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const resetPassword = async (email: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'x-csrf-token': csrfToken,
+        },
       });
-      if (error) throw error;
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to reset password'));
-      throw err;
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
     } finally {
       setLoading(false);
     }
@@ -134,13 +110,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = {
     user,
-    session,
     loading,
     error,
     signIn,
-    signUp,
     signOut,
-    resetPassword,
   };
 
   return (
@@ -148,4 +121,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

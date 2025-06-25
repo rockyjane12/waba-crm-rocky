@@ -1,13 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { productApi } from "@/services/api/productApi";
-import { Product, ProductFilters, ProductSort } from "@/types/product";
-import { useState, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient, UseQueryOptions } from "@tanstack/react-query";
+import { productApiClient } from "@/services/api/productApiClient";
+import { Product, ProductFilters, ProductSort, ProductResponse } from "@/types/product";
+import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
 export const useProducts = (catalogId: string | null) => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(19);
   const [filters, setFilters] = useState<ProductFilters>({});
   const [sort, setSort] = useState<ProductSort>({
     field: 'name',
@@ -16,42 +16,46 @@ export const useProducts = (catalogId: string | null) => {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
+  const queryKey = useMemo(() => ["products", catalogId, page, pageSize, filters, sort], [catalogId, page, pageSize, filters, sort]);
+  const queryFn = useCallback(async () => {
+    if (!catalogId) return { data: [], paging: { cursors: { before: "", after: "" } } };
+    try {
+      // Convert filters to API format
+      const apiFilters: Record<string, string> = {};
+      if (filters.availability) {
+        apiFilters.availability = filters.availability;
+      }
+      if (filters.visibility) {
+        apiFilters.visibility = filters.visibility;
+      }
+      // Get products from API
+      return await productApiClient.getProducts(catalogId, {
+        limit: pageSize,
+        filter: apiFilters,
+        // Facebook Graph API doesn't support sorting directly,
+        // we'll sort the results client-side
+      });
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      throw error;
+    }
+  }, [catalogId, pageSize, filters, sort]);
+
   const {
-    data,
+    data = { data: [], paging: { cursors: { before: "", after: "" } } },
     isLoading,
     error,
     refetch,
     isFetching
-  } = useQuery({
-    queryKey: ["products", catalogId, page, pageSize, filters, sort],
-    queryFn: async () => {
-      if (!catalogId) return { data: [], paging: { cursors: { before: "", after: "" } } };
-      
-      try {
-        // Convert filters to API format
-        const apiFilters: Record<string, string> = {};
-        if (filters.availability) {
-          apiFilters.availability = filters.availability;
-        }
-        if (filters.visibility) {
-          apiFilters.visibility = filters.visibility;
-        }
-        
-        // Get products from API
-        return await productApi.getProducts(catalogId, {
-          limit: pageSize,
-          filter: apiFilters,
-          // Facebook Graph API doesn't support sorting directly,
-          // we'll sort the results client-side
-        });
-      } catch (error) {
-        console.error("Error fetching products:", error);
-        throw error;
-      }
-    },
-    enabled: !!catalogId,
-    staleTime: 1 * 60 * 1000, // 1 minute
-  });
+  } = useQuery<ProductResponse, Error, ProductResponse, any[]>(
+    {
+      queryKey,
+      queryFn,
+      enabled: !!catalogId,
+      staleTime: 1 * 60 * 1000, // 1 minute
+      // keepPreviousData: true, // Uncomment if supported by your React Query version
+    }
+  );
 
   // Client-side sorting and filtering
   const processedProducts = useCallback(() => {
@@ -103,7 +107,7 @@ export const useProducts = (catalogId: string | null) => {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: (productData: Omit<Product, 'id'>) => 
-      productApi.createProduct(catalogId!, productData),
+      productApiClient.createProduct(catalogId!, productData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products", catalogId] });
       toast.success("Product created successfully");
@@ -116,7 +120,7 @@ export const useProducts = (catalogId: string | null) => {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Product> }) => 
-      productApi.updateProduct(id, data),
+      productApiClient.updateProduct(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products", catalogId] });
       setEditingProduct(null);
@@ -130,7 +134,7 @@ export const useProducts = (catalogId: string | null) => {
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => productApi.deleteProduct(id),
+    mutationFn: (id: string) => productApiClient.deleteProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products", catalogId] });
       toast.success("Product deleted successfully");

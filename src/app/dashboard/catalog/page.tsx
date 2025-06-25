@@ -11,18 +11,18 @@ export default function CatalogPage() {
     <PageContainer
       title="Product Catalog"
       subtitle="Manage your Facebook product catalog"
-      actions={
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>
-        </div>
-      }
+      // actions={
+      //   <div className="flex gap-2">
+      //     <Button variant="outline" size="sm">
+      //       <Download className="h-4 w-4 mr-2" />
+      //       Export
+      //     </Button>
+      //     <Button size="sm">
+      //       <Plus className="h-4 w-4 mr-2" />
+      //       Add Product
+      //     </Button>
+      //   </div>
+      // }
     >
       <CatalogGrid />
     </PageContainer>

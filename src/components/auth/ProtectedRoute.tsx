@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/modules/auth/hooks/useAuth";
+import { useAuth } from "@/modules/auth/context/AuthContext";
 import { Loading } from "@/components/ui/loading";
 
 interface ProtectedRouteProps {
@@ -24,7 +24,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loading size="lg" message="Loading..." />
+        <Loading size="lg" />
       </div>
     );
   }

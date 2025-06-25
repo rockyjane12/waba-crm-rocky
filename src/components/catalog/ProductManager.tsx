@@ -31,6 +31,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
   catalogId,
   onBack,
 }) => {
+  console.log("ProductManager mounted", { catalogId });
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewProductData, setViewProductData] = useState<Product | null>(null);

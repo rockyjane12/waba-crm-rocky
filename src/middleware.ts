@@ -1,48 +1,35 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { randomBytes } from "crypto";
 
-// List of public routes that don't require authentication
-const publicRoutes = ['/', '/login', '/signup', '/reset-password'];
+const CSRF_COOKIE_NAME = "csrf_token";
+const CSRF_SECRET = process.env.CSRF_SECRET || "default_secret";
 
-export async function middleware(request: NextRequest) {
-  const res = NextResponse.next();
-  const supabase = createMiddlewareClient({ req: request, res });
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next();
 
-  // Check if we have a session
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // Check if CSRF cookie is already set
+  const csrfCookie = request.cookies.get(CSRF_COOKIE_NAME);
 
-  // Get the pathname of the request
-  const { pathname } = request.nextUrl;
+  if (!csrfCookie) {
+    // Generate a new CSRF token
+    const token = randomBytes(32).toString("hex");
 
-  // If the route is public, allow access
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
-    return res;
+    // Set the CSRF token cookie with HttpOnly and Secure flags
+    response.cookies.set({
+      name: CSRF_COOKIE_NAME,
+      value: token,
+      httpOnly: false, // Allow client JS to read it
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24, // 1 day
+    });
   }
 
-  // Check auth condition
-  if (!session && !publicRoutes.includes(pathname)) {
-    // Redirect to login page if accessing protected route without session
-    const redirectUrl = new URL('/login', request.url);
-    redirectUrl.searchParams.set('redirectTo', pathname);
-    return NextResponse.redirect(redirectUrl);
-  }
-
-  return res;
+  return response;
 }
 
-// Configure which routes to run the middleware on
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-  ],
+  matcher: ["/api/:path*"],
 };

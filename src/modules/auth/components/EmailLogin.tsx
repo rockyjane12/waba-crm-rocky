@@ -3,7 +3,7 @@ import { Mail, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -15,8 +15,7 @@ interface EmailLoginProps {
 const EmailLogin: React.FC<EmailLoginProps> = ({ onForgotPassword }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, loading } = useAuth();
   const router = useRouter();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -27,8 +26,6 @@ const EmailLogin: React.FC<EmailLoginProps> = ({ onForgotPassword }) => {
       return;
     }
 
-    setLoading(true);
-
     try {
       await signIn(email, password);
       toast.success("Logged in successfully");
@@ -36,8 +33,6 @@ const EmailLogin: React.FC<EmailLoginProps> = ({ onForgotPassword }) => {
     } catch (error: any) {
       console.error("Unexpected login error:", error);
       toast.error(error.message || "An unexpected error occurred");
-    } finally {
-      setLoading(false);
     }
   };
 
