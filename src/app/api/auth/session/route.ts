@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { headers, cookies } from "next/headers";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -7,11 +6,12 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 export async function GET(request: NextRequest) {
   try {
-    // Get CSRF token from header using Next.js headers() and cookies()
-    const headersList = headers();
-    const cookieStore = cookies();
-    const headerToken = headersList.get("x-csrf-token");
-    const cookieToken = cookieStore.get("csrf_token")?.value;
+    // Get CSRF token from header
+    const headerToken = request.headers.get("x-csrf-token");
+    const cookieToken = request.cookies.get("csrf_token")?.value;
+    
+    console.log("[SESSION API] CSRF header token:", headerToken);
+    console.log("[SESSION API] CSRF cookie token:", cookieToken);
     
     // Validate CSRF token - header token should match cookie token
     if (!headerToken || !cookieToken || headerToken !== cookieToken) {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get Supabase access token from cookie
-    const accessToken = cookieStore.get("sb-access-token")?.value;
+    const accessToken = request.cookies.get("sb-access-token")?.value;
     if (!accessToken) {
       console.log("[SESSION API] No Supabase access token found in cookies");
       return NextResponse.json({ user: null });

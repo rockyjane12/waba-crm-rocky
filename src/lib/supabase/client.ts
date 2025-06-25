@@ -5,7 +5,7 @@ import type { Database } from '@/integrations/supabase/types';
 // Global variable to store the Supabase client instance
 let supabaseInstance: SupabaseClient<Database> | null = null;
 
-// Function to create a new Supabase client instance
+// Function to create a new Supabase client instance for browser usage
 const createSupabaseClient = () => {
   if (supabaseInstance) return supabaseInstance;
 
@@ -48,4 +48,4 @@ const getSupabaseClient = () => {
 };
 
 // Export a singleton instance
-export const supabase = getSupabaseClient(); 
+export const supabase = getSupabaseClient();

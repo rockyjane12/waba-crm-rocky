@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { headers, cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -32,11 +31,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get CSRF tokens using Next.js headers() and cookies()
-    const headersList = headers();
-    const cookieStore = cookies();
-    const headerToken = headersList.get("x-csrf-token");
-    const cookieToken = cookieStore.get("csrf_token")?.value;
+    // Get CSRF token from header and cookie
+    const headerToken = request.headers.get("x-csrf-token");
+    const cookieToken = request.cookies.get("csrf_token")?.value;
 
     console.log("[LOGIN API] CSRF header token:", headerToken);
     console.log("[LOGIN API] CSRF cookie token:", cookieToken);

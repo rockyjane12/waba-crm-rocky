@@ -31,7 +31,7 @@ const EmailLogin: React.FC<EmailLoginProps> = ({ onForgotPassword }) => {
       toast.success("Logged in successfully");
       router.push("/dashboard");
     } catch (error: any) {
-      console.error("Unexpected login error:", error);
+      console.error("Login error:", error);
       toast.error(error.message || "An unexpected error occurred");
     }
   };

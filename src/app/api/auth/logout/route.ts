@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify CSRF token from cookie using Next.js cookies()
-    const cookieStore = cookies();
-    const csrfToken = cookieStore.get("csrf_token")?.value;
+    // Verify CSRF token from header and cookie
+    const headerToken = request.headers.get("x-csrf-token");
+    const cookieToken = request.cookies.get("csrf_token")?.value;
 
-    if (!csrfToken || csrfToken !== process.env.CSRF_SECRET) {
+    if (!headerToken || !cookieToken || headerToken !== cookieToken) {
       return NextResponse.json(
         { error: "Invalid CSRF token" },
         { status: 403 }
@@ -25,7 +24,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true });
+    // Create response and clear auth cookies
+    const response = NextResponse.json({ success: true });
+    
+    // Clear Supabase session cookies
+    response.cookies.set('sb-access-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0, // Expire immediately
+    });
+    
+    response.cookies.set('sb-refresh-token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 0, // Expire immediately
+    });
+    
+    // Set auth event cookie for client-side detection
+    response.cookies.set('sb-auth-event', 'SIGNED_OUT', {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 10, // Short-lived, just for event handling
+    });
+
+    return response;
   } catch (error) {
     console.error("Unexpected logout error:", error);
     return NextResponse.json(
