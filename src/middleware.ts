@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const CSRF_COOKIE_NAME = "csrf_token";
-const CSRF_SECRET = process.env.CSRF_SECRET || "default_secret";
 
 function generateRandomHex(size: number): string {
   const array = new Uint8Array(size);
@@ -25,7 +24,7 @@ export function middleware(request: NextRequest) {
       name: CSRF_COOKIE_NAME,
       value: token,
       httpOnly: false, // Allow client JS to read it
-      secure: false, // Allow HTTP in development
+      secure: process.env.NODE_ENV === 'production',
       path: "/",
       sameSite: "strict",
       maxAge: 60 * 60 * 24, // 1 day

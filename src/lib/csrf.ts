@@ -1,14 +1,15 @@
-// Generate a CSRF token using browser-compatible crypto
-export function generateCSRFToken(): string {
-  if (typeof window !== 'undefined' && window.crypto) {
-    // Browser environment
-    const array = new Uint8Array(32);
-    window.crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  } else {
-    // Fallback for non-browser environments
-    return Math.random().toString(36).substring(2) + Date.now().toString(36);
+// Helper function to get cookie value
+export function getCookieValue(name: string): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.trim().split('=');
+    if (cookieName === name) {
+      return cookieValue;
+    }
   }
+  return null;
 }
 
 // Store the CSRF token in localStorage
@@ -20,6 +21,11 @@ export function storeCSRFToken(token: string): void {
 
 // Get the stored CSRF token
 export function getStoredCSRFToken(): string | null {
+  // First try to get from cookie directly
+  const cookieToken = getCookieValue('csrf_token');
+  if (cookieToken) return cookieToken;
+  
+  // Fall back to localStorage
   if (typeof window !== 'undefined') {
     return localStorage.getItem('csrf_token');
   }
@@ -29,20 +35,15 @@ export function getStoredCSRFToken(): string | null {
 // Generate and store a new CSRF token
 export function setupCSRFToken(): string {
   // First check if we have a CSRF token from the cookie
-  if (typeof window !== 'undefined' && document.cookie) {
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if (name === 'csrf_token' && value) {
-        // Store the cookie token in localStorage for consistency
-        storeCSRFToken(value);
-        return value;
-      }
-    }
+  const cookieToken = getCookieValue('csrf_token');
+  
+  if (cookieToken) {
+    // Store the cookie token in localStorage for consistency
+    storeCSRFToken(cookieToken);
+    return cookieToken;
   }
   
-  // If no cookie token, generate a new one
-  const token = generateCSRFToken();
-  storeCSRFToken(token);
-  return token;
+  // If no cookie token, use the one from localStorage or return empty
+  const localToken = getStoredCSRFToken();
+  return localToken || '';
 }
