@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify CSRF token from cookie
-    const csrfToken = request.cookies.get("csrf_token")?.value;
+    // Verify CSRF token from cookie using Next.js cookies()
+    const cookieStore = cookies();
+    const csrfToken = cookieStore.get("csrf_token")?.value;
 
     if (!csrfToken || csrfToken !== process.env.CSRF_SECRET) {
       return NextResponse.json(
