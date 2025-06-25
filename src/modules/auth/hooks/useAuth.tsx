@@ -1,6 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { setupCSRFToken, getStoredCSRFToken } from '@/lib/csrf';
-import { createHash } from 'crypto';
 
 interface User {
   id: string;
@@ -51,11 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Ensure CSRF token is set up
       const csrfToken = getStoredCSRFToken() || setupCSRFToken();
 
-      // Hash password before sending
-      const hashedPassword = createHash('sha256')
-        .update(password)
-        .digest('hex');
-
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -64,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         body: JSON.stringify({
           email,
-          password: hashedPassword,
+          password, // Send plain password - Supabase will handle hashing
         }),
       });
 

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { headers, cookies } from "next/headers";
 import { supabase } from "@/lib/supabase";
 import { rateLimit } from "@/lib/rate-limit";
-import { createHash } from "crypto";
 
 // Rate limiter for login attempts
 const limiter = rateLimit({
