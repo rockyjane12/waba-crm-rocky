@@ -1,19 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify CSRF token from header and cookie
-    const headerToken = request.headers.get("x-csrf-token");
-    const cookieToken = request.cookies.get("csrf_token")?.value;
+    // Verify CSRF token from cookie
+    const requestHeaders = headers();
+    const csrfToken = requestHeaders.get("x-csrf-token");
+    const csrfSecret = process.env.CSRF_SECRET;
 
-    if (!headerToken || !cookieToken || headerToken !== cookieToken) {
+    if (!csrfToken || csrfToken !== csrfSecret) {
       return NextResponse.json(
         { error: "Invalid CSRF token" },
         { status: 403 }
       );
     }
 
+    // Create a server-side Supabase client
+    const supabase = createServerSupabaseClient();
     const { error } = await supabase.auth.signOut();
 
     if (error) {
@@ -24,36 +28,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create response and clear auth cookies
-    const response = NextResponse.json({ success: true });
-    
-    // Clear Supabase session cookies
-    response.cookies.set('sb-access-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 0, // Expire immediately
-    });
-    
-    response.cookies.set('sb-refresh-token', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 0, // Expire immediately
-    });
-    
-    // Set auth event cookie for client-side detection
-    response.cookies.set('sb-auth-event', 'SIGNED_OUT', {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 10, // Short-lived, just for event handling
-    });
-
-    return response;
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Unexpected logout error:", error);
     return NextResponse.json(

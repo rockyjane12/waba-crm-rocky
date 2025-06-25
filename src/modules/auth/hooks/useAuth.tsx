@@ -29,7 +29,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkSession = async () => {
     try {
-      const response = await fetch('/api/auth/session');
+      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+      console.log("[AUTH] Using CSRF token:", csrfToken);
+      
+      const response = await fetch('/api/auth/session', {
+        headers: {
+          'x-csrf-token': csrfToken,
+        },
+      });
+      
       const data = await response.json();
       
       if (data.user) {
@@ -49,6 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Ensure CSRF token is set up
       const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+      console.log("[AUTH] Using CSRF token:", csrfToken);
 
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -58,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
         body: JSON.stringify({
           email,
-          password, // Send plain password - Supabase will handle hashing
+          password,
         }),
       });
 
@@ -81,10 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
+      const csrfToken = getStoredCSRFToken() || setupCSRFToken();
+      
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
-          'x-csrf-token': getStoredCSRFToken() || '',
+          'x-csrf-token': csrfToken,
         },
       });
       setUser(null);
