@@ -44,3 +44,6 @@ export const PublicRoute = ({ children }: { children: ReactNode }) => {
   // Allow access to public routes regardless of authentication status
   return <>{children}</>;
 };
+
+// Re-export the ProtectedRoute component
+export { ProtectedRoute } from '@/components/auth/ProtectedRoute';

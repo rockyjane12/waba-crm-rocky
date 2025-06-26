@@ -2,7 +2,7 @@
 
 import React from "react";
 import { AppSidebar } from "@/components/AppSidebar";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { withPageErrorBoundary } from "@/components/hoc/withPageErrorBoundary";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useIsMobile } from "@/hooks/common/useIsMobile";

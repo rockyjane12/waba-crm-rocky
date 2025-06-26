@@ -1,37 +1,28 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/modules/auth/context/AuthContext";
-import { Loading } from "@/components/ui/loading";
+import { usePathname, useRouter } from "next/navigation";
+import { ReactNode, useEffect } from "react";
+import { LoadingSpinner } from "@/components/ui/loading";
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
-      // Get the current path to redirect back after login
-      const currentPath = window.location.pathname;
-      router.replace(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+      router.push(`/login?redirect=${encodeURIComponent(pathname)}`);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loading size="lg" />
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   if (!user) {
-    return null; // Will redirect in useEffect
+    return null;
   }
 
   return <>{children}</>;
-}
+};

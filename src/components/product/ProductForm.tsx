@@ -81,6 +81,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCan
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include', // Important for sending auth cookies
       });
 
       if (!response.ok) {
@@ -89,14 +90,20 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCan
       }
 
       const data = await response.json();
+      
+      // Set the image URL in the form
+      form.setValue('imageUrl', data.url);
+      setImagePreview(data.url);
+      
       return data.url;
     } catch (error: any) {
+      console.error('Image upload error:', error);
       toast.error(`Image upload failed: ${error.message}`);
       throw error;
     } finally {
       setImageUploading(false);
     }
-  }, []);
+  }, [form]);
 
   const handleFormSubmit = async (values: ProductFormValues) => {
     try {
@@ -245,45 +252,36 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCan
           {/* Right Column */}
           <div className="space-y-8">
             <div className="bg-muted/5 rounded-lg p-4 space-y-4">
-              <h3 className="text-lg font-semibold text-primary">Image</h3>
+              <h3 className="text-lg font-semibold text-primary">Product Image</h3>
               <FormField
                 control={form.control}
                 name="image"
-                render={({ field: { value, onChange, ...fieldProps } }) => (
+                render={({ field: { onChange, value, ...field } }) => (
                   <FormItem>
-                    <FormLabel className="font-medium">Product Image*</FormLabel>
+                    <FormLabel className="font-medium">Image</FormLabel>
                     <FormControl>
-                      <div className="rounded-lg border-2 border-dashed border-primary/40 bg-background/50 p-6 flex flex-col items-center justify-center min-h-[240px]">
-                        <ImageUpload
-                          onChange={async (file) => {
-                            if (file) {
-                              setImageUploading(true);
-                              try {
-                                const url = await handleImageUpload(file);
-                                setImagePreview(url);
-                                form.setValue("imageUrl", url, { shouldValidate: true });
-                                onChange(undefined); // clear file from form state
-                              } catch (error) {
-                                setImagePreview(null);
-                                form.setValue("imageUrl", "", { shouldValidate: true });
-                                onChange(undefined);
-                              } finally {
-                                setImageUploading(false);
-                              }
-                            } else {
-                              setImagePreview(null);
-                              form.setValue("imageUrl", "", { shouldValidate: true });
-                              onChange(undefined);
+                      <ImageUpload
+                        onChange={async (file) => {
+                          onChange(file);
+                          if (file) {
+                            try {
+                              await handleImageUpload(file);
+                            } catch (error) {
+                              // Error is already handled in handleImageUpload
+                              onChange(null);
                             }
-                          }}
-                          value={undefined}
-                          previewUrl={imagePreview}
-                          {...fieldProps}
-                        />
-                      </div>
+                          } else {
+                            form.setValue('imageUrl', '');
+                            setImagePreview(null);
+                          }
+                        }}
+                        value={value}
+                        previewUrl={imagePreview}
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>
-                      500x500px minimum, 8MB maximum
+                      Upload a high-quality product image (min 500x500px, max 8MB)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

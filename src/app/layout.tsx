@@ -4,7 +4,6 @@ import { Metadata } from "next";
 import { RootErrorBoundary } from "./RootErrorBoundary";
 import "@/styles/globals.css";
 import { Inter } from 'next/font/google';
-import { AppProvider } from '@/providers/AppProvider';
 
 // Validate required environment variables
 validateEnvVariables(REQUIRED_ENV_VARS);

@@ -1,14 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { nanoid } from 'nanoid';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { StorageService } from '@/lib/supabase/services/storageService';
+import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { Database } from '@/lib/supabase/types';
 
 export async function POST(request: NextRequest) {
   try {
+    // Create a Supabase client using the route handler client
+    const cookieStore = cookies();
+    const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+
+    // Get the session
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Get WABA ID from user metadata or users table
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('waba_id')
+      .eq('id', session.user.id)
+      .single();
+
+    if (userError || !userData?.waba_id) {
+      return NextResponse.json(
+        { error: 'No WABA ID found for user' },
+        { status: 400 }
+      );
+    }
+
     // Get the content type
     const contentType = request.headers.get('content-type') || '';
     
@@ -24,59 +49,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-      if (!validTypes.includes(file.type)) {
-        return NextResponse.json(
-          { error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' },
-          { status: 400 }
-        );
-      }
-
-      // Validate file size (8MB max)
-      if (file.size > 8 * 1024 * 1024) {
-        return NextResponse.json(
-          { error: 'File size must be less than 8MB' },
-          { status: 400 }
-        );
-      }
-
-      // Generate a unique file name
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${nanoid()}.${fileExt}`;
-      const filePath = `catalog-item-images/${fileName}`;
-
-      // Convert file to ArrayBuffer
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = new Uint8Array(arrayBuffer);
-
-      // Upload to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('catalog-item-images')
-        .upload(filePath, buffer, {
-          contentType: file.type,
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 500 }
-        );
-      }
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('catalog-item-images')
-        .getPublicUrl(filePath);
-
-      return NextResponse.json({
-        url: urlData.publicUrl,
-        path: filePath,
-        size: file.size,
-        type: file.type
+      // Upload file using StorageService
+      const uploadedFile = await StorageService.uploadProductImage(file, {
+        wabaId: userData.waba_id,
+        contentType: file.type,
+        fileName: file.name,
+        maxSizeMB: 8
       });
+
+      return NextResponse.json(uploadedFile);
     } else {
       return NextResponse.json(
         { error: 'Unsupported content type' },
@@ -87,7 +68,7 @@ export async function POST(request: NextRequest) {
     console.error('Upload error:', error);
     return NextResponse.json(
       { error: error.message || 'An error occurred during upload' },
-      { status: 500 }
+      { status: error.status || 500 }
     );
   }
 }
