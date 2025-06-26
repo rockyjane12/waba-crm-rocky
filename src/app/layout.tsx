@@ -1,7 +1,7 @@
 import { validateEnvVariables, REQUIRED_ENV_VARS } from "@/lib/utils/env";
+import { AppProvider } from "@/providers/AppProvider";
 import { Metadata } from "next";
 import { RootErrorBoundary } from "./RootErrorBoundary";
-import { AuthProviderWrapper } from "@/components/AuthProviderWrapper";
 import "@/styles/globals.css";
 import { Inter } from 'next/font/google';
 import { AppProvider } from '@/providers/AppProvider';
@@ -32,12 +32,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <AuthProviderWrapper>
-          <AppProvider>
-            <RootErrorBoundary>{children}</RootErrorBoundary>
-          </AppProvider>
-        </AuthProviderWrapper>
+      <body className="font-sans antialiased">
+        <AppProvider>
+          <RootErrorBoundary>{children}</RootErrorBoundary>
+        </AppProvider>
       </body>
     </html>
   );
