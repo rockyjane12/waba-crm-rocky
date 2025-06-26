@@ -1,40 +1,26 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { randomBytes } from "crypto";
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-const CSRF_COOKIE_NAME = "csrf_token";
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
 
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
+  // Refresh session if expired - required for Server Components
+  await supabase.auth.getSession();
 
-  // Check if CSRF cookie is already set
-  const csrfCookie = request.cookies.get(CSRF_COOKIE_NAME);
-
-  if (!csrfCookie) {
-    // Generate a new CSRF token
-    const token = randomBytes(32).toString('hex');
-
-    // Set the CSRF token cookie with HttpOnly and Secure flags
-    response.cookies.set({
-      name: CSRF_COOKIE_NAME,
-      value: token,
-      httpOnly: false, // Allow client JS to read it
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 1 day
-    });
-
-    // Store the token in environment variable for server-side validation
-    process.env.CSRF_SECRET = token;
-  } else {
-    // Use the existing token from cookie
-    process.env.CSRF_SECRET = csrfCookie.value;
-  }
-
-  return response;
+  return res;
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public (public files)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
+  ],
 };

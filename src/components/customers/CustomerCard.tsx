@@ -5,11 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { CustomerWithRelations } from '@/types/common';
 import { formatDistanceToNow } from 'date-fns';
 
-interface CustomerCardProps {
+interface DetailedCustomerCardProps {
   customer: CustomerWithRelations;
 }
 
-export const CustomerCard: React.FC<CustomerCardProps> = ({ customer }) => {
+export const DetailedCustomerCard: React.FC<DetailedCustomerCardProps> = ({ customer }) => {
   const lastMessage = customer.whatsapp_messages?.[0];
   const status = customer.whatsapp_status;
 

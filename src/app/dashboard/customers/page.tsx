@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useMemo } from "react";
 import { PageContainer } from "@/components/PageContainer";
 import { useCustomers } from "@/hooks/customers/useCustomers";
-import { CustomerCard } from "@/components/CustomerCard";
+import { SimpleCustomerCard } from "@/components/SimpleCustomerCard";
 import { Button } from "@/components/ui/button";
 import { UserPlus, Download, ChevronDown } from "lucide-react";
 import {
@@ -14,7 +14,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { DataTable } from "@/components/DataTable";
+import { DataTable } from "@/components/tables/DataTable";
 import { CustomerFilters } from "@/components/customers/CustomerFilters";
 import { getCustomerColumns } from "@/components/customers/customer-table-columns";
 
@@ -104,7 +104,7 @@ export default function CustomersPage() {
           emptyMessage="No customers found matching your criteria."
           loadingMessage="Loading customers..."
           renderMobileCard={(customer) => (
-            <CustomerCard key={customer.id} customer={customer} />
+            <SimpleCustomerCard key={customer.id} customer={customer} />
           )}
         />
       </div>

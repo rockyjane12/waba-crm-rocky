@@ -3,13 +3,26 @@ import { Metadata } from "next";
 import { RootErrorBoundary } from "./RootErrorBoundary";
 import { AuthProviderWrapper } from "@/components/AuthProviderWrapper";
 import "@/styles/globals.css";
+import { Inter } from 'next/font/google';
+import { AppProvider } from '@/providers/AppProvider';
 
 // Validate required environment variables
 validateEnvVariables(REQUIRED_ENV_VARS);
 
+const inter = Inter({ subsets: ['latin'] });
+
 export const metadata: Metadata = {
   title: "WABA Dashboard",
   description: "WhatsApp Business API Dashboard",
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
+    other: {
+      rel: 'icon',
+      url: '/favicon.ico',
+    },
+  },
 };
 
 export default function RootLayout({
@@ -19,9 +32,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased">
+      <body className={inter.className}>
         <AuthProviderWrapper>
-          <RootErrorBoundary>{children}</RootErrorBoundary>
+          <AppProvider>
+            <RootErrorBoundary>{children}</RootErrorBoundary>
+          </AppProvider>
         </AuthProviderWrapper>
       </body>
     </html>

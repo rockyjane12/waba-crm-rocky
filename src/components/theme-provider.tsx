@@ -44,13 +44,16 @@ export function ThemeProvider({
   const [theme, setTheme] = useState<Theme>(defaultTheme);
   const [mounted, setMounted] = useState(false);
 
-  // Initialize theme from localStorage once mounted
+  // Initialize mounted state and theme from localStorage
   useEffect(() => {
     setMounted(true);
     const savedTheme = getThemeFromStorage(storageKey, defaultTheme);
-    setTheme(savedTheme);
-  }, [defaultTheme, storageKey]);
+    if (savedTheme !== theme) {
+      setTheme(savedTheme);
+    }
+  }, []);  // Run only once on mount
 
+  // Handle theme changes and system theme
   useEffect(() => {
     if (!mounted) return;
 
@@ -58,13 +61,18 @@ export function ThemeProvider({
     root.classList.remove("light", "dark");
 
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
+      const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+      const handleChange = (e: MediaQueryListEvent | MediaQueryList) => {
+        const systemTheme = e.matches ? "dark" : "light";
+        root.classList.add(systemTheme);
+      };
 
-      root.classList.add(systemTheme);
-      return;
+      // Set initial value
+      handleChange(mediaQuery);
+
+      // Listen for changes
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
     }
 
     root.classList.add(theme);

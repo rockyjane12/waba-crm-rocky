@@ -1,5 +1,5 @@
 import React from "react";
-import { DataTable } from "@/components/DataTable";
+import { DataTable } from "@/components/tables/DataTable";
 import OrderCard from "./OrderCard";
 import { useIsMobile } from "@/hooks";
 import { StatusBadge } from "@/components/common/StatusBadge";

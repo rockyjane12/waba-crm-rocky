@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LogOut, Menu, X } from "lucide-react";
@@ -23,7 +23,7 @@ import { sidebarNavItems, type SidebarNavItem } from "@/config/sidebar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { useMediaQuery } from "@/hooks/common/useMediaQuery";
+import { useIsMobile } from "@/hooks/common/useIsMobile";
 import {
   Tooltip,
   TooltipContent,
@@ -35,7 +35,7 @@ export function AppSidebar() {
   const { user, signOut } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useIsMobile();
   const { isOpen, setIsOpen } = useSidebar();
 
   const handleSignOut = async () => {
@@ -81,9 +81,9 @@ export function AppSidebar() {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div>{content}</div>
+              <span tabIndex={0}>{content}</span>
             </TooltipTrigger>
-            <TooltipContent side="right" align="center">
+            <TooltipContent side="right" align="center" sideOffset={10}>
               <p>{item.label}</p>
             </TooltipContent>
           </Tooltip>

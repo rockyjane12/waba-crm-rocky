@@ -11,7 +11,6 @@ export interface ProductQueryParams {
   after?: string;
   before?: string;
   fields?: string[];
-  filter?: Record<string, string>;
 }
 
 export class ApiError extends Error {
@@ -28,9 +27,18 @@ export class ApiError extends Error {
 export const createProductApi = (config: ProductApiConfig) => {
   const { baseUrl, accessToken, version } = config;
 
-  const headers = {
-    "Content-Type": "application/json",
-  };
+  const defaultFields = [
+    "name",
+    "currency",
+    "availability",
+    "description",
+    "image_url",
+    "price",
+    "retailer_id",
+    "visibility",
+    "url",
+    "sale_price"
+  ].join(",");
 
   const handleResponse = async <T>(response: Response): Promise<T> => {
     if (!response.ok) {
@@ -41,58 +49,22 @@ export const createProductApi = (config: ProductApiConfig) => {
         errorData
       );
     }
-
     return response.json();
-  };
-
-  const buildQueryString = (params?: ProductQueryParams): string => {
-    if (!params) return "";
-
-    const queryParams = new URLSearchParams();
-    
-    // Add access token
-    queryParams.append("access_token", accessToken);
-
-    if (params.limit) queryParams.append("limit", params.limit.toString());
-    if (params.after) queryParams.append("after", params.after);
-    if (params.before) queryParams.append("before", params.before);
-    
-    if (params.fields && params.fields.length > 0) {
-      queryParams.append("fields", params.fields.join(","));
-    }
-
-    if (params.filter) {
-      Object.entries(params.filter).forEach(([key, value]) => {
-        if (value) queryParams.append(`filter[${key}]`, value);
-      });
-    }
-
-    const queryString = queryParams.toString();
-    return queryString ? `?${queryString}` : "";
   };
 
   return {
     getProducts: async (catalogId: string, params?: ProductQueryParams): Promise<ProductResponse> => {
       try {
-        const fields = params?.fields || [
-          "name", 
-          "currency", 
-          "availability", 
-          "description", 
-          "image_url", 
-          "price", 
-          "retailer_id", 
-          "visibility", 
-          "url", 
-          "sale_price"
-        ];
+        const searchParams = new URLSearchParams();
+        searchParams.append("access_token", accessToken);
+        searchParams.append("fields", params?.fields?.join(",") || defaultFields);
         
-        const queryParams = {
-          ...params,
-          fields
-        };
+        if (params?.limit) searchParams.append("limit", params.limit.toString());
+        if (params?.after) searchParams.append("after", params.after);
+        if (params?.before) searchParams.append("before", params.before);
         
-        const url = `${baseUrl}/${version}/${catalogId}/products${buildQueryString(queryParams)}`;
+        const url = `${baseUrl}/${version}/${catalogId}/products?${searchParams.toString()}`;
+        console.log("Fetching products from URL:", url);
         
         const response = await fetch(url);
         
@@ -112,7 +84,11 @@ export const createProductApi = (config: ProductApiConfig) => {
 
     getProduct: async (productId: string): Promise<Product> => {
       try {
-        const url = `${baseUrl}/${version}/${productId}?access_token=${accessToken}&fields=name,currency,availability,description,image_url,price,retailer_id,visibility,url,sale_price`;
+        const searchParams = new URLSearchParams();
+        searchParams.append("access_token", accessToken);
+        searchParams.append("fields", defaultFields);
+        
+        const url = `${baseUrl}/${version}/${productId}?${searchParams.toString()}`;
         
         const response = await fetch(url);
         
@@ -136,7 +112,9 @@ export const createProductApi = (config: ProductApiConfig) => {
         
         const response = await fetch(url, {
           method: 'POST',
-          headers,
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify(productData)
         });
         
@@ -160,7 +138,9 @@ export const createProductApi = (config: ProductApiConfig) => {
         
         const response = await fetch(url, {
           method: 'POST',
-          headers,
+          headers: {
+            'Content-Type': 'application/json',
+          },
           body: JSON.stringify(productData)
         });
         
@@ -184,7 +164,9 @@ export const createProductApi = (config: ProductApiConfig) => {
         
         const response = await fetch(url, {
           method: 'DELETE',
-          headers
+          headers: {
+            'Content-Type': 'application/json',
+          }
         });
         
         if (!response.ok) {

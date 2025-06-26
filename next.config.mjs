@@ -1,3 +1,5 @@
+import { existsSync } from 'fs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
@@ -26,19 +28,39 @@ const nextConfig = {
       };
     }
 
-    // Handle Supabase Realtime client warning
+    // Handle Supabase Realtime client warning and other warnings
     config.ignoreWarnings = [
       {
         module: /node_modules\/@supabase\/realtime-js/,
       },
       {
-        message:
-          /Critical dependency: the request of a dependency is an expression/,
+        message: /Critical dependency: the request of a dependency is an expression/,
       },
+      {
+        message: /\[DEP0040\]/  // Ignore punycode deprecation warning
+      }
     ];
+
+    // Improve caching behavior
+    if (!dev) {
+      config.cache = {
+        type: 'filesystem',
+        version: '1.0.0',
+        cacheDirectory: '.next/cache',
+        store: 'pack',
+        buildDependencies: {
+          defaultWebpack: ['webpack/lib/'],
+          config: [import.meta.url],
+          tsconfig: ['tsconfig.json'].filter(f => existsSync(f)),
+        },
+      };
+    }
 
     return config;
   },
+  // Disable favicon generation through next/metadata
+  generateEtags: true,
+  poweredByHeader: false,
 };
 
 export default nextConfig;

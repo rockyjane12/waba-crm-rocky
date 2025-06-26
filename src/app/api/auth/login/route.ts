@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { NextResponse } from 'next/server';
 import { rateLimit } from "@/lib/rate-limit";
-import { cookies, headers } from "next/headers";
+import { generateCSRFToken, setCSRFCookie } from "@/lib/csrf";
 
 // Rate limiter for login attempts
 const limiter = rateLimit({
@@ -9,7 +10,7 @@ const limiter = rateLimit({
   uniqueTokenPerInterval: 500, // Max 500 users per interval
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     // Rate limiting
     try {
@@ -22,32 +23,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { email, password } = body;
+    const { email, password } = await request.json();
+    const supabase = createRouteHandlerClient({ cookies });
 
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
-      );
-    }
-
-    // Verify CSRF token from cookie
-    const requestHeaders = headers();
-    const csrfToken = requestHeaders.get("x-csrf-token");
-    const csrfSecret = process.env.CSRF_SECRET;
-
-    if (!csrfToken || csrfToken !== csrfSecret) {
-      return NextResponse.json(
-        { error: "Invalid CSRF token" },
-        { status: 403 }
-      );
-    }
-
-    // Create a server-side Supabase client
-    const supabase = createServerSupabaseClient();
-
-    // Attempt login with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -61,11 +39,12 @@ export async function POST(request: NextRequest) {
         error: error.message,
       });
 
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
+
+    // Generate and set new CSRF token
+    const csrfToken = generateCSRFToken();
+    setCSRFCookie(csrfToken);
 
     // Remove sensitive data before sending response
     const safeUserData = {
@@ -74,16 +53,18 @@ export async function POST(request: NextRequest) {
       lastSignInAt: data.user?.last_sign_in_at,
     };
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: safeUserData,
       session: {
         expires_at: data.session?.expires_at,
       },
     });
-  } catch (error) {
+
+    return response;
+  } catch (error: any) {
     console.error("Unexpected error during login:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred" },
+      { error: error.message || 'An error occurred during login' },
       { status: 500 }
     );
   }

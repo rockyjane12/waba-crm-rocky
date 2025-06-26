@@ -12,7 +12,7 @@ import {
   Coins,
 } from "lucide-react";
 
-interface Customer {
+interface SimpleCustomer {
   id: number;
   wa_id: string;
   name: string | null;
@@ -26,11 +26,11 @@ interface Customer {
   created_at: string;
 }
 
-interface CustomerCardProps {
-  customer: Customer;
+interface SimpleCustomerCardProps {
+  customer: SimpleCustomer;
 }
 
-export const CustomerCard = ({ customer }: CustomerCardProps) => {
+export const SimpleCustomerCard = ({ customer }: SimpleCustomerCardProps) => {
   return (
     <Card className="p-4 hover:shadow-md transition-shadow">
       <div className="space-y-4">
@@ -110,4 +110,4 @@ export const CustomerCard = ({ customer }: CustomerCardProps) => {
       </div>
     </Card>
   );
-};
+}; 

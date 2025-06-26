@@ -1,67 +1,99 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { catalogApiClient } from "@/services/api/catalogApiClient";
 import { Catalog } from "@/types/catalog";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { env } from "@/lib/utils/env";
 
-export const useCatalogs = () => {
+export interface UseCatalogsOptions {
+  limit?: number;
+  enableAutoRefetch?: boolean;
+}
+
+export const useCatalogs = (options: UseCatalogsOptions = {}) => {
+  const queryClient = useQueryClient();
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
+  const [currentCursor, setCurrentCursor] = useState<string | null>(null);
 
   const {
-    data: catalogs,
+    data,
     isLoading,
     error,
-    refetch
+    refetch,
+    isFetching
   } = useQuery({
-    queryKey: ["catalogs"],
+    queryKey: ["catalogs", options.limit, currentCursor],
     queryFn: async () => {
       try {
-        // Use the new API route to fetch catalogs
-        const response = await catalogApiClient.getCatalogs();
-        
-        // Add default product count since the API doesn't provide it
-        const catalogsWithCount = response.data.map(catalog => ({
-          ...catalog,
-          productCount: 0
-        }));
-        
-        return catalogsWithCount;
+        return await catalogApiClient.getCatalogs({
+          limit: options.limit,
+          after: currentCursor || undefined,
+        });
       } catch (error) {
         console.error("Error fetching catalogs:", error);
         toast.error(`Failed to fetch catalogs: ${error instanceof Error ? error.message : String(error)}`);
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: env.NEXT_PUBLIC_CACHE_STALE_TIME,
+    gcTime: env.NEXT_PUBLIC_CACHE_MAX_AGE,
+    retry: env.NEXT_PUBLIC_API_MAX_RETRIES,
+    refetchOnWindowFocus: options.enableAutoRefetch ?? false,
+    refetchOnReconnect: options.enableAutoRefetch ?? false,
   });
 
-  const selectCatalog = (catalogId: string) => {
+  const selectCatalog = useCallback((catalogId: string) => {
     setSelectedCatalogId(catalogId);
-  };
+    // Prefetch products for the selected catalog
+    queryClient.prefetchQuery({
+      queryKey: ["products", catalogId],
+      queryFn: () => catalogApiClient.getCatalogs({ limit: 10 }), // Adjust limit as needed
+    });
+  }, [queryClient]);
 
-  const clearSelectedCatalog = () => {
+  const clearSelectedCatalog = useCallback(() => {
     setSelectedCatalogId(null);
-  };
+  }, []);
 
-  const getDefaultCatalog = (): Catalog | undefined => {
-    if (!catalogs) return undefined;
-    return catalogs.find(catalog => catalog.isDefault);
-  };
+  const getDefaultCatalog = useCallback((): Catalog | undefined => {
+    if (!data?.data) return undefined;
+    return data.data.find(catalog => catalog.isDefault);
+  }, [data]);
 
-  const getSelectedCatalog = (): Catalog | undefined => {
-    if (!catalogs || !selectedCatalogId) return undefined;
-    return catalogs.find(catalog => catalog.id === selectedCatalogId);
-  };
+  const getSelectedCatalog = useCallback((): Catalog | undefined => {
+    if (!data?.data || !selectedCatalogId) return undefined;
+    return data.data.find(catalog => catalog.id === selectedCatalogId);
+  }, [data, selectedCatalogId]);
+
+  const loadMore = useCallback(() => {
+    if (data?.paging?.cursors?.after) {
+      setCurrentCursor(data.paging.cursors.after);
+    }
+  }, [data]);
+
+  const loadPrevious = useCallback(() => {
+    if (data?.paging?.cursors?.before) {
+      setCurrentCursor(data.paging.cursors.before);
+    }
+  }, [data]);
 
   return {
-    catalogs: catalogs || [],
+    catalogs: data?.data || [],
     isLoading,
+    isFetching,
     error: error as Error | null,
     selectedCatalogId,
     selectedCatalog: getSelectedCatalog(),
     defaultCatalog: getDefaultCatalog(),
     selectCatalog,
     clearSelectedCatalog,
-    refetch
+    refetch,
+    pagination: {
+      hasNextPage: !!data?.paging?.next,
+      hasPreviousPage: !!data?.paging?.previous,
+      loadMore,
+      loadPrevious,
+      isFetchingMore: isFetching && !!currentCursor,
+    }
   };
 };

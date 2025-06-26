@@ -4,7 +4,7 @@ export interface CatalogApiConfig {
   baseUrl: string;
   accessToken: string;
   version: string;
-  businessAccountId: string;
+  businessId: string;
 }
 
 export interface ApiResponse<T> {
@@ -23,7 +23,7 @@ export class ApiError extends Error {
 }
 
 export const createCatalogApi = (config: CatalogApiConfig) => {
-  const { baseUrl, accessToken, version, businessAccountId } = config;
+  const { baseUrl, accessToken, version, businessId } = config;
 
   const headers = {
     "Content-Type": "application/json",
@@ -45,7 +45,8 @@ export const createCatalogApi = (config: CatalogApiConfig) => {
   return {
     getCatalogs: async (): Promise<ApiResponse<Catalog[]>> => {
       try {
-        const url = `${baseUrl}/${version}/${businessAccountId}/owned_product_catalogs?access_token=${accessToken}`;
+        const url = `${baseUrl}/${version}/${businessId}/owned_product_catalogs?access_token=${accessToken}`;
+        console.log("url",url);
         
         const response = await fetch(url);
         
@@ -91,5 +92,5 @@ export const catalogApi = createCatalogApi({
   baseUrl: process.env.NEXT_PUBLIC_WABA_API_URL || "https://graph.facebook.com",
   accessToken: process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN || "",
   version: process.env.NEXT_PUBLIC_WABA_API_VERSION || "v23.0",
-  businessAccountId: process.env.NEXT_PUBLIC_WABA_BUSINESS_ACCOUNT_ID || ""
+  businessId: process.env.NEXT_PUBLIC_BUSINESS_ID || ""
 });

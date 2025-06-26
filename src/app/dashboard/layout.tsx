@@ -5,11 +5,11 @@ import { AppSidebar } from "@/components/AppSidebar";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { withPageErrorBoundary } from "@/components/hoc/withPageErrorBoundary";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useMediaQuery } from "@/hooks/common/useMediaQuery";
+import { useIsMobile } from "@/hooks/common/useIsMobile";
 import { cn } from "@/lib/utils";
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useIsMobile();
 
   return (
     <ProtectedRoute>

@@ -1,25 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-export function useIsMobile(breakpoint: number = 768) {
-  // Initialize with a check to avoid hydration mismatch
-  const [isMobile, setIsMobile] = useState(false);
+const MOBILE_BREAKPOINT = "(max-width: 768px)";
+
+export function useIsMobile(): boolean {
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia(MOBILE_BREAKPOINT).matches;
+  });
 
   useEffect(() => {
-    // Set initial value once mounted
-    setIsMobile(window.innerWidth < breakpoint);
+    if (typeof window === 'undefined') return;
 
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < breakpoint);
-    };
+    const mediaQuery = window.matchMedia(MOBILE_BREAKPOINT);
+    const updateTarget = (e: MediaQueryListEvent) => setIsMobile(e.matches);
 
-    // Add event listener
-    window.addEventListener("resize", checkIfMobile);
+    // Modern browsers
+    mediaQuery.addEventListener('change', updateTarget);
 
-    // Cleanup
-    return () => window.removeEventListener("resize", checkIfMobile);
-  }, [breakpoint]);
+    return () => mediaQuery.removeEventListener('change', updateTarget);
+  }, []); // Empty deps array since we only want to run this once on mount
 
   return isMobile;
 }

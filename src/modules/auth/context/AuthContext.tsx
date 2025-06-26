@@ -1,20 +1,7 @@
 "use client";
 
 import { useState, useEffect, createContext, useContext } from 'react';
-
-// Helper function to get cookie value
-function getCookieValue(name: string): string | null {
-  if (typeof window === 'undefined') return null;
-  
-  const cookies = document.cookie.split(';');
-  for (const cookie of cookies) {
-    const [cookieName, cookieValue] = cookie.trim().split('=');
-    if (cookieName === name) {
-      return cookieValue;
-    }
-  }
-  return null;
-}
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 interface User {
   id: string;
@@ -36,37 +23,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
-    // Check for existing session on mount
     checkSession();
   }, []);
 
   const checkSession = async () => {
     try {
-      // Get CSRF token from cookie
-      const csrfToken = getCookieValue('csrf_token');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      if (!csrfToken) {
-        console.log('No CSRF token found in cookie');
-        setLoading(false);
-        return;
+      if (sessionError) {
+        throw sessionError;
       }
-      
-      const response = await fetch('/api/auth/session', {
-        headers: {
-          'x-csrf-token': csrfToken,
-        },
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.user) {
-          setUser(data.user);
-        }
-      } else {
-        console.error('Session check failed:', response.status);
+
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email!,
+          lastSignInAt: session.user.last_sign_in_at!,
+        });
       }
     } catch (error) {
       console.error('Session check failed:', error);
@@ -80,37 +56,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       setLoading(true);
 
-      // Get CSRF token from cookie
-      const csrfToken = getCookieValue('csrf_token');
-      
-      if (!csrfToken) {
-        throw new Error('CSRF token not found. Please refresh the page.');
-      }
-
-      // Log the CSRF token being sent
-      console.log('[AUTH] Using CSRF token:', csrfToken);
-
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrfToken,
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-        credentials: 'include', // Include cookies in the request
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
+      if (signInError) {
+        throw signInError;
       }
 
-      setUser(data.user);
-      return data;
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          email: data.user.email!,
+          lastSignInAt: data.user.last_sign_in_at!,
+        });
+      }
     } catch (error: any) {
       setError(error.message);
       throw error;
@@ -122,17 +83,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       setLoading(true);
-      const csrfToken = getCookieValue('csrf_token');
+      const { error: signOutError } = await supabase.auth.signOut();
       
-      if (csrfToken) {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'x-csrf-token': csrfToken,
-          },
-          credentials: 'include',
-        });
+      if (signOutError) {
+        throw signOutError;
       }
+      
       setUser(null);
     } catch (error) {
       console.error('Logout failed:', error);

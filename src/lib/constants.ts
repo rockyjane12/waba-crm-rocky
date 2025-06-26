@@ -20,24 +20,21 @@ export const ROUTES = {
   CUSTOMERS: "/dashboard/customers",
 } as const;
 
-// API endpoints configuration
+// API endpoints configuration - these will be validated by env.ts
 export const API_ENDPOINTS = {
-  SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  WABA_API_URL: process.env.NEXT_PUBLIC_WABA_API_URL,
-  WABA_API_VERSION: process.env.NEXT_PUBLIC_WABA_API_VERSION,
+  BASE_URL: "/api",
+  CATALOGS: "/api/catalogs",
+  PRODUCTS: "/api/products",
+  ORDERS: "/api/orders",
+  CUSTOMERS: "/api/customers",
+  MESSAGES: "/api/messages",
+  AUTH: {
+    LOGIN: "/api/auth/login",
+    LOGOUT: "/api/auth/logout",
+    SIGNUP: "/api/auth/signup",
+    SESSION: "/api/auth/session",
+  },
 } as const;
-
-// Validate required environment variables
-if (!API_ENDPOINTS.SUPABASE_URL || !API_ENDPOINTS.SUPABASE_ANON_KEY) {
-  throw new Error("Missing required Supabase environment variables");
-}
-
-if (!API_ENDPOINTS.WABA_API_URL || !API_ENDPOINTS.WABA_API_VERSION) {
-  throw new Error(
-    "Missing required WhatsApp Business API environment variables",
-  );
-}
 
 export const BUSINESS_CATEGORIES = [
   { value: "retail", label: "Retail & Consumer Goods" },
