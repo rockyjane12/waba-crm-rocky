@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createProductApi } from '@/services/api/productApi';
+import { getServerEnvVars } from '@/lib/utils/env';
 
 // Initialize product API with server-side environment variables
-const productApi = createProductApi({
-  baseUrl: process.env.NEXT_PUBLIC_WABA_API_URL || "https://graph.facebook.com",
-  accessToken: process.env.WABA_ACCESS_TOKEN || "",
-  version: process.env.NEXT_PUBLIC_WABA_API_VERSION || "v23.0"
-});
+const getServerConfig = () => {
+  const serverEnv = getServerEnvVars();
+  return createProductApi({
+    baseUrl: serverEnv.WABA_API_URL,
+    accessToken: serverEnv.WABA_ACCESS_TOKEN,
+    version: serverEnv.WABA_API_VERSION
+  });
+};
 
 // Log configuration for debugging (excluding sensitive data)
 console.log('API Configuration:', {
@@ -27,53 +31,30 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Make direct call to Facebook Graph API
-    const fields = [
-      "name",
-      "currency",
-      "availability",
-      "description",
-      "image_url",
-      "price",
-      "retailer_id",
-      "visibility",
-      "url",
-      "sale_price"
-    ].join(",");
+    const productApi = getServerConfig();
+    const params = {
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+      after: searchParams.get('after') || undefined,
+      before: searchParams.get('before') || undefined,
+      fields: searchParams.get('fields')?.split(',')
+    };
 
-    const fbSearchParams = new URLSearchParams({
-      fields,
-      access_token: process.env.WABA_ACCESS_TOKEN || "",
-    });
-
-    if (searchParams.get('limit')) {
-      fbSearchParams.append('limit', searchParams.get('limit')!);
-    }
-    if (searchParams.get('after')) {
-      fbSearchParams.append('after', searchParams.get('after')!);
-    }
-    if (searchParams.get('before')) {
-      fbSearchParams.append('before', searchParams.get('before')!);
-    }
-
-    const url = `https://graph.facebook.com/v23.0/${catalogId}/products?${fbSearchParams.toString()}`;
-    console.log("Making direct request to:", url.replace(process.env.WABA_ACCESS_TOKEN || "", "[REDACTED]"));
-
-    const response = await fetch(url);
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      console.error("Facebook API error:", error);
-      return NextResponse.json(
-        { error: error.message || 'Failed to fetch products from Facebook' },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return NextResponse.json(data);
+    const products = await productApi.getProducts(catalogId, params);
+    return NextResponse.json(products);
   } catch (error: any) {
     console.error('Error fetching products:', error);
+    
+    // Handle specific Facebook API errors
+    if (error.message?.includes('access token')) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid or expired Facebook access token. Please check your WABA_ACCESS_TOKEN environment variable.',
+          details: error.message
+        },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Failed to fetch products' },
       { status: error.status || 500 }
@@ -93,12 +74,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const productData = await request.json();
-    const product = await productApi.createProduct(catalogId, productData);
-
+    const productApi = getServerConfig();
+    const data = await request.json();
+    
+    const product = await productApi.createProduct(catalogId, data);
     return NextResponse.json(product);
   } catch (error: any) {
     console.error('Error creating product:', error);
+    
+    // Handle specific Facebook API errors
+    if (error.message?.includes('access token')) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid or expired Facebook access token. Please check your WABA_ACCESS_TOKEN environment variable.',
+          details: error.message
+        },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || 'Failed to create product' },
       { status: error.status || 500 }

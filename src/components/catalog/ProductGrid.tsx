@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Product } from "@/types/product";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,10 +62,11 @@ const ProductGrid: React.FC<ProductGridProps> = ({
       {products.map((product) => (
         <Card key={product.id} className="overflow-hidden hover:shadow-md transition-shadow flex flex-col">
           <div className="relative h-48 w-full bg-gray-100">
-            <img
+            <Image
               src={product.image_url}
               alt={product.name}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = "https://via.placeholder.com/300?text=No+Image";
               }}
@@ -137,7 +139,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will permanently delete the product "{product.name}".
+                      This will permanently delete the product &quot;{product.name}&quot;.
                       This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>

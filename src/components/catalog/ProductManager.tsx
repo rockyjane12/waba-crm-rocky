@@ -4,9 +4,7 @@ import ProductTable from "./ProductTable";
 import ProductGrid from "./ProductGrid";
 import ProductFilterBar from "./ProductFilters";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Grid, List, RefreshCw } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { ArrowLeft, Grid, List } from "lucide-react";
 import { Product } from "@/types/product";
 import {
   Dialog,
@@ -14,13 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import AddProductButton from "./AddProductButton";
+import Image from "next/image";
 
 interface ProductManagerProps {
   catalogId: string;
@@ -31,7 +24,6 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
   catalogId,
   onBack,
 }) => {
-  console.log("ProductManager mounted", { catalogId });
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [viewProductData, setViewProductData] = useState<Product | null>(null);
@@ -176,12 +168,13 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
           {viewProductData && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="relative h-64 rounded-md overflow-hidden">
-                <img
+                <Image
                   src={viewProductData.image_url}
                   alt={viewProductData.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "https://via.placeholder.com/300?text=No+Image";
+                  fill
+                  className="object-cover"
+                  onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+                    e.currentTarget.src = "https://via.placeholder.com/300?text=No+Image";
                   }}
                 />
               </div>
@@ -249,4 +242,3 @@ export const ProductManager: React.FC<ProductManagerProps> = ({
   );
 };
 
-export default ProductManager;

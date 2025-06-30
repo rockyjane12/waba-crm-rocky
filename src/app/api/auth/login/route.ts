@@ -1,8 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { rateLimit } from "@/lib/rate-limit";
-import { headers } from "next/headers";
 
 // Rate limiter for login attempts
 const limiter = rateLimit({
@@ -14,7 +13,8 @@ export async function POST(request: Request) {
   try {
     // Rate limiting
     try {
-      const ip = request.ip ?? "127.0.0.1";
+      const headersList = headers();
+      const ip = headersList.get('x-forwarded-for') ?? "127.0.0.1";
       await limiter.check(5, ip); // 5 requests per minute per IP
     } catch {
       return NextResponse.json(
@@ -41,10 +41,6 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-
-    // Generate and set new CSRF token
-    const csrfToken = generateCSRFToken();
-    setCSRFCookie(csrfToken);
 
     // Remove sensitive data before sending response
     const safeUserData = {

@@ -184,8 +184,10 @@ export const createProductApi = (config: ProductApiConfig) => {
 };
 
 // Create a default instance with Facebook Graph API implementation
+import { env } from "@/lib/utils/env";
+
 export const productApi = createProductApi({
-  baseUrl: process.env.NEXT_PUBLIC_WABA_API_URL || "https://graph.facebook.com",
-  accessToken: process.env.NEXT_PUBLIC_WABA_ACCESS_TOKEN || "",
-  version: process.env.NEXT_PUBLIC_WABA_API_VERSION || "v23.0"
+  baseUrl: env.NEXT_PUBLIC_WABA_API_URL || "https://graph.facebook.com",
+  accessToken: env.NEXT_PUBLIC_WABA_ACCESS_TOKEN || "",
+  version: env.NEXT_PUBLIC_WABA_API_VERSION || "v23.0"
 });

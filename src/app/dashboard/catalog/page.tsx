@@ -3,8 +3,6 @@
 import React from "react";
 import { PageContainer } from "@/components/PageContainer";
 import CatalogGrid from "@/components/catalog/CatalogGrid";
-import { Button } from "@/components/ui/button";
-import { Plus, Download } from "lucide-react";
 
 export default function CatalogPage() {
   return (

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { headers } from "next/headers";
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Verify CSRF token from cookie
     const requestHeaders = headers();

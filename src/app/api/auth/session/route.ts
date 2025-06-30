@@ -16,9 +16,13 @@ export async function GET() {
     }
 
     return NextResponse.json({ user: session.user });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    let message = 'An error occurred while fetching session';
+    if (error instanceof Error) {
+      message = error.message;
+    }
     return NextResponse.json(
-      { error: error.message || 'An error occurred while fetching session' },
+      { error: message },
       { status: 500 }
     );
   }

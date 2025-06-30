@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useCatalogs } from "@/hooks/catalog/useCatalogs";
-import ProductManager from "./ProductManager";
+import { ProductManager } from "./ProductManager";
 import CatalogCard from "./CatalogCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";

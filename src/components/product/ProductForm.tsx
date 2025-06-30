@@ -53,6 +53,7 @@ interface ProductFormProps {
 
 export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCancel, showHeader = true, renderFooter = true }: ProductFormProps) {
   const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
 
   const form = useForm<ProductFormValues>({
@@ -71,7 +72,11 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCan
   });
 
   const handleImageUpload = useCallback(async (file: File) => {
+    if (!file) return;
+    
     setImageUploading(true);
+    setImageUploadError(null);
+    
     try {
       // Create FormData for the API request
       const formData = new FormData();
@@ -81,6 +86,7 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCan
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include', // Important for sending auth cookies
       });
 
       if (!response.ok) {
@@ -89,14 +95,21 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCan
       }
 
       const data = await response.json();
+      
+      // Set the image URL in the form
+      form.setValue('imageUrl', data.url);
+      setImagePreview(data.url);
+      
       return data.url;
     } catch (error: any) {
+      console.error('Image upload error:', error);
+      setImageUploadError(error.message || 'Failed to upload image');
       toast.error(`Image upload failed: ${error.message}`);
       throw error;
     } finally {
       setImageUploading(false);
     }
-  }, []);
+  }, [form]);
 
   const handleFormSubmit = async (values: ProductFormValues) => {
     try {
@@ -249,36 +262,20 @@ export function ProductForm({ onSubmit, initialData, isSubmitting = false, onCan
               <FormField
                 control={form.control}
                 name="image"
-                render={({ field: { value, onChange, ...fieldProps } }) => (
+                render={({ field: { onChange, value } }) => (
                   <FormItem>
                     <FormLabel className="font-medium">Product Image*</FormLabel>
                     <FormControl>
                       <div className="rounded-lg border-2 border-dashed border-primary/40 bg-background/50 p-6 flex flex-col items-center justify-center min-h-[240px]">
                         <ImageUpload
-                          onChange={async (file) => {
-                            if (file) {
-                              setImageUploading(true);
-                              try {
-                                const url = await handleImageUpload(file);
-                                setImagePreview(url);
-                                form.setValue("imageUrl", url, { shouldValidate: true });
-                                onChange(undefined); // clear file from form state
-                              } catch (error) {
-                                setImagePreview(null);
-                                form.setValue("imageUrl", "", { shouldValidate: true });
-                                onChange(undefined);
-                              } finally {
-                                setImageUploading(false);
-                              }
-                            } else {
-                              setImagePreview(null);
-                              form.setValue("imageUrl", "", { shouldValidate: true });
-                              onChange(undefined);
-                            }
+                          onChange={file => {
+                            onChange(file);
+                            if (file) handleImageUpload(file);
                           }}
-                          value={undefined}
+                          value={value}
                           previewUrl={imagePreview}
-                          {...fieldProps}
+                          isUploading={imageUploading}
+                          uploadError={imageUploadError}
                         />
                       </div>
                     </FormControl>

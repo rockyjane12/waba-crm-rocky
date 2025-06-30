@@ -36,8 +36,8 @@ export interface ProductVariant {
 export interface Catalog extends BaseEntity {
   id: string;
   name: string;
-  description: string;
-  thumbnailUrl: string;
+  description?: string;
+  thumbnailUrl?: string;
   productCount: number;
   status: 'active' | 'inactive' | 'draft';
   isDefault: boolean;

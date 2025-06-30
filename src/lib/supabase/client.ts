@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
+import { getServerEnvVars } from '@/lib/utils/env';
 
 // Global variable to store the Supabase client instance
 let supabaseInstance: SupabaseClient<Database> | null = null;
@@ -9,14 +10,9 @@ let supabaseInstance: SupabaseClient<Database> | null = null;
 const createSupabaseClient = () => {
   if (supabaseInstance) return supabaseInstance;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const { SUPABASE_URL, SUPABASE_ANON_KEY } = getServerEnvVars();
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
-  }
-
-  supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  supabaseInstance = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
       storageKey: 'waba-auth',

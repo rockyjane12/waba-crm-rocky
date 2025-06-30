@@ -3,16 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { LoadingSpinner } from "@/components/ui/loading";
 
 interface ImageUploadProps {
   onChange: (file: File | null) => void;
   value?: File | null;
   previewUrl?: string | null;
   className?: string;
+  isUploading?: boolean;
+  uploadError?: string | null;
 }
 
 const ImageUpload = forwardRef<HTMLDivElement, ImageUploadProps>(
-  ({ onChange, value, previewUrl, className }, ref) => {
+  ({ onChange, value, previewUrl, className, isUploading, uploadError }, ref) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [dragActive, setDragActive] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -131,6 +134,7 @@ const ImageUpload = forwardRef<HTMLDivElement, ImageUploadProps>(
           accept="image/*"
           onChange={handleInputChange}
           className="hidden"
+          disabled={isUploading}
         />
         
         <div
@@ -140,11 +144,22 @@ const ImageUpload = forwardRef<HTMLDivElement, ImageUploadProps>(
           onDragOver={handleDrag}
           onDrop={handleDrop}
           className={cn(
-            "relative flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg cursor-pointer transition-colors",
+            "relative flex flex-col items-center justify-center h-64 border-2 border-dashed rounded-lg transition-colors",
             dragActive ? "border-primary bg-primary/5" : "border-gray-300 hover:border-primary/50 hover:bg-gray-50",
-            error && "border-red-500 bg-red-50"
+            error || uploadError ? "border-red-500 bg-red-50" : "",
+            isUploading ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+            "overflow-hidden"
           )}
         >
+          {isUploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+              <div className="text-center text-white">
+                <LoadingSpinner className="w-8 h-8 mb-2" />
+                <p className="text-sm">Uploading image...</p>
+              </div>
+            </div>
+          )}
+          
           {localPreview ? (
             <div className="relative w-full h-full">
               <img
@@ -158,6 +173,7 @@ const ImageUpload = forwardRef<HTMLDivElement, ImageUploadProps>(
                 size="icon"
                 className="absolute top-2 right-2 shadow-md"
                 onClick={handleRemove}
+                disabled={isUploading}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -178,6 +194,7 @@ const ImageUpload = forwardRef<HTMLDivElement, ImageUploadProps>(
                 variant="outline"
                 size="sm"
                 className="mt-4"
+                disabled={isUploading}
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Select Image
@@ -193,8 +210,8 @@ const ImageUpload = forwardRef<HTMLDivElement, ImageUploadProps>(
           )}
         </div>
         
-        {error && (
-          <p className="text-sm font-medium text-red-500">{error}</p>
+        {(error || uploadError) && (
+          <p className="text-sm font-medium text-red-500">{error || uploadError}</p>
         )}
       </div>
     );
